@@ -15,7 +15,7 @@ const currency = new Intl.NumberFormat("es-CO", {
 
 let productsById = {}; // se llena al cargar productos, para mostrar nombres en los pedidos
 let openChatOrderId = null;
-let chatPollInterval = null;
+let chatChannel = null;
 
 function setState(html) {
   document.getElementById("adminState").innerHTML = html;
@@ -165,6 +165,22 @@ async function loadMessages(orderId) {
   renderMessages(orderId, messages);
 }
 
+/* Escucha nuevos mensajes por WebSocket (Supabase Realtime) -- ver la nota
+   equivalente en script.js: el polling con setInterval lo throttlean los
+   navegadores a ~60s aunque la pestaña este visible. */
+function subscribeToOrderMessages(orderId) {
+  if (chatChannel) supabaseClient.removeChannel(chatChannel);
+
+  chatChannel = supabaseClient
+    .channel(`order-messages-${orderId}`)
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "order_messages", filter: `order_id=eq.${orderId}` },
+      () => loadMessages(orderId)
+    )
+    .subscribe();
+}
+
 function toggleChat(orderId) {
   const chatEl = document.querySelector(`.order-chat[data-id="${orderId}"]`);
   if (!chatEl) return;
@@ -172,21 +188,20 @@ function toggleChat(orderId) {
   if (openChatOrderId === orderId) {
     chatEl.hidden = true;
     openChatOrderId = null;
-    clearInterval(chatPollInterval);
+    if (chatChannel) supabaseClient.removeChannel(chatChannel);
     return;
   }
 
   document.querySelectorAll(".order-chat").forEach((el) => (el.hidden = true));
-  clearInterval(chatPollInterval);
 
   chatEl.hidden = false;
   openChatOrderId = orderId;
   loadMessages(orderId);
-  chatPollInterval = setInterval(() => loadMessages(orderId), 5000);
+  subscribeToOrderMessages(orderId);
 }
 
-// El navegador pausa el setInterval en segundo plano (pantalla bloqueada,
-// cambio de pestaña) -- al volver, refresca ya el chat que este abierto.
+// Respaldo: si el canal realtime se cae, al volver a la pestaña igual se
+// refresca una vez (no depende de esto para funcionar).
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden && openChatOrderId) loadMessages(openChatOrderId);
 });

@@ -404,7 +404,7 @@ function setupScrollReveal() {
 }
 
 /* Chat con el cliente sobre su ultimo pedido */
-let customerChatPollInterval = null;
+let customerChatChannel = null;
 
 function showChatWidget() {
   document.getElementById("chatFab").hidden = false;
@@ -434,12 +434,28 @@ async function loadCustomerMessages() {
       cache: "no-store",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    console.log("[chat] poll", new Date().toLocaleTimeString(), "status:", res.status);
     if (!res.ok) return;
     renderCustomerMessages(await res.json());
   } catch (e) {
     console.error("[chat] fallo al consultar mensajes", e);
   }
+}
+
+/* Escucha nuevos mensajes por WebSocket (Supabase Realtime) en vez de
+   preguntar cada rato -- el polling con setInterval lo throttlean los
+   navegadores moviles (y hasta de escritorio) a ~60s, dando la sensacion
+   de que "no llega nada solo". Un canal realtime no sufre ese problema. */
+function subscribeToOrderMessages(orderId) {
+  if (customerChatChannel) supabaseClient.removeChannel(customerChatChannel);
+
+  customerChatChannel = supabaseClient
+    .channel(`order-messages-${orderId}`)
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "order_messages", filter: `order_id=eq.${orderId}` },
+      () => loadCustomerMessages()
+    )
+    .subscribe();
 }
 
 function setupCustomerChat() {
@@ -450,21 +466,19 @@ function setupCustomerChat() {
     const panel = document.getElementById("customerChatPanel");
     const opening = panel.hidden;
     panel.hidden = !opening;
-    clearInterval(customerChatPollInterval);
     if (opening) {
       loadCustomerMessages();
-      customerChatPollInterval = setInterval(loadCustomerMessages, 5000);
+      const currentOrderId = localStorage.getItem("fm-last-order-id");
+      if (currentOrderId) subscribeToOrderMessages(currentOrderId);
     }
   });
 
   document.getElementById("customerChatClose").addEventListener("click", () => {
     document.getElementById("customerChatPanel").hidden = true;
-    clearInterval(customerChatPollInterval);
   });
 
-  // Los celulares pausan el setInterval cuando la pestaña queda en segundo
-  // plano (pantalla bloqueada, cambio de app) -- al volver, refresca ya
-  // mismo en vez de esperar a que el intervalo retome solo.
+  // Respaldo: si por lo que sea el canal realtime se cae, al volver a la
+  // pestana igual se refresca una vez (no depende de esto para funcionar).
   document.addEventListener("visibilitychange", () => {
     const panel = document.getElementById("customerChatPanel");
     if (!document.hidden && panel && !panel.hidden) loadCustomerMessages();

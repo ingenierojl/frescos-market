@@ -33,8 +33,66 @@
 
   <div id="adminState" class="admin-state">Cargando…</div>
 
-  <div id="ordersList" class="orders-list"></div>
+  <nav class="admin-tabs" id="adminTabs" hidden>
+    <button class="admin-tab active" data-tab="orders">Pedidos</button>
+    <button class="admin-tab" data-tab="products">Productos</button>
+  </nav>
+
+  <section id="ordersTab" class="admin-tab-panel">
+    <div id="ordersList" class="orders-list"></div>
+  </section>
+
+  <section id="productsTab" class="admin-tab-panel" hidden>
+    <button class="btn-outline" id="addProductBtn">+ Agregar producto</button>
+    <div id="productsList" class="products-admin-list"></div>
+  </section>
 </main>
+
+<div class="login-modal-overlay" id="productModal">
+  <div class="login-modal">
+    <button class="login-modal-close" id="productModalClose" aria-label="Cerrar">✕</button>
+    <h2 id="productModalTitle">Agregar producto</h2>
+    <form id="productForm" class="order-info-form">
+      <input type="hidden" id="productId">
+      <label>
+        Slug (identificador único, sin espacios)
+        <input type="text" id="productSlug" required>
+      </label>
+      <label>
+        Nombre
+        <input type="text" id="productName" required>
+      </label>
+      <label>
+        Unidad (ej: "por libra", "por unidad", "atado")
+        <input type="text" id="productUnit" required>
+      </label>
+      <label>
+        Precio (COP)
+        <input type="number" id="productPrice" min="0" required>
+      </label>
+      <label>
+        Categoría
+        <select id="productCategory">
+          <option value="hortalizas">Hortalizas</option>
+          <option value="frutas">Frutas</option>
+        </select>
+      </label>
+      <label>
+        URL de la foto
+        <input type="text" id="productPhoto" required>
+      </label>
+      <label>
+        Stock (vacío = sin control de stock)
+        <input type="number" id="productStock" min="0">
+      </label>
+      <label class="product-active-label">
+        <input type="checkbox" id="productActive" checked>
+        Activo (visible en el catálogo)
+      </label>
+      <button type="submit" class="btn-primary-block">Guardar</button>
+    </form>
+  </div>
+</div>
 
 <script src="panel.js" defer></script>
 </body>

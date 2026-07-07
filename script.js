@@ -445,8 +445,13 @@ async function loadCustomerMessages() {
    preguntar cada rato -- el polling con setInterval lo throttlean los
    navegadores moviles (y hasta de escritorio) a ~60s, dando la sensacion
    de que "no llega nada solo". Un canal realtime no sufre ese problema. */
-function subscribeToOrderMessages(orderId) {
+async function subscribeToOrderMessages(orderId) {
   if (customerChatChannel) supabaseClient.removeChannel(customerChatChannel);
+
+  // Sin esto, el canal de Realtime no sabe quien sos: las policies de RLS
+  // (dueño del pedido o equipo) lo bloquean todo en silencio.
+  const { data } = await supabaseClient.auth.getSession();
+  supabaseClient.realtime.setAuth(data.session ? data.session.access_token : null);
 
   customerChatChannel = supabaseClient
     .channel(`order-messages-${orderId}`)
@@ -455,7 +460,7 @@ function subscribeToOrderMessages(orderId) {
       { event: "INSERT", schema: "public", table: "order_messages", filter: `order_id=eq.${orderId}` },
       () => loadCustomerMessages()
     )
-    .subscribe();
+    .subscribe((status) => console.log("[chat] realtime status:", status));
 }
 
 function setupCustomerChat() {

@@ -168,8 +168,12 @@ async function loadMessages(orderId) {
 /* Escucha nuevos mensajes por WebSocket (Supabase Realtime) -- ver la nota
    equivalente en script.js: el polling con setInterval lo throttlean los
    navegadores a ~60s aunque la pestaña este visible. */
-function subscribeToOrderMessages(orderId) {
+async function subscribeToOrderMessages(orderId) {
   if (chatChannel) supabaseClient.removeChannel(chatChannel);
+
+  // Sin esto, el canal no sabe quien sos y las policies de RLS bloquean todo.
+  const token = await getAccessToken();
+  supabaseClient.realtime.setAuth(token);
 
   chatChannel = supabaseClient
     .channel(`order-messages-${orderId}`)
@@ -178,7 +182,7 @@ function subscribeToOrderMessages(orderId) {
       { event: "INSERT", schema: "public", table: "order_messages", filter: `order_id=eq.${orderId}` },
       () => loadMessages(orderId)
     )
-    .subscribe();
+    .subscribe((status) => console.log("[chat] realtime status:", status));
 }
 
 function toggleChat(orderId) {

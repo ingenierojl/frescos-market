@@ -45,9 +45,12 @@ function ensureLoginModal() {
   });
 
   overlay.querySelector('[data-provider="google"]').addEventListener("click", async () => {
+    // window.location.origin no alcanza en GitHub Pages: el sitio vive en una
+    // subcarpeta (/frescos-market/), no en la raiz del dominio como en Netlify.
+    // .href conserva la carpeta actual para volver exactamente ahi.
     await supabaseClient.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: window.location.href },
     });
   });
 }

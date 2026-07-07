@@ -245,8 +245,14 @@ function renderAuthUI(session) {
 }
 
 async function setupAuth() {
-  const { data } = await supabaseClient.auth.getSession();
-  renderAuthUI(data.session);
+  // Si getSession() falla (red, CORS al abrir el archivo local, etc.) igual
+  // se debe mostrar el boton de login en vez de dejar el area vacia.
+  try {
+    const { data } = await supabaseClient.auth.getSession();
+    renderAuthUI(data.session);
+  } catch (e) {
+    renderAuthUI(null);
+  }
 
   supabaseClient.auth.onAuthStateChange((_event, session) => {
     renderAuthUI(session);

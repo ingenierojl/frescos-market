@@ -216,11 +216,15 @@ async function placeOrder() {
 
     if (!res.ok) throw new Error("order creation failed");
 
+    const order = await res.json();
+    localStorage.setItem("fm-last-order-id", order.id);
+    showChatWidget();
+
     Object.keys(cart).forEach((id) => delete cart[id]);
     saveCart();
     renderCart();
     closeCart();
-    alert("¡Pedido recibido! Te contactaremos para confirmar la entrega.");
+    alert("¡Pedido recibido! Te contactaremos para confirmar la entrega. Puedes escribirnos desde el botón de chat.");
   } catch (e) {
     alert("No se pudo enviar el pedido. Verifica tu conexión e intenta de nuevo.");
   } finally {
@@ -340,6 +344,76 @@ function setupScrollReveal() {
   document.querySelectorAll(".io-reveal").forEach((el) => observer.observe(el));
 }
 
+/* Chat con el cliente sobre su ultimo pedido */
+let customerChatPollInterval = null;
+
+function showChatWidget() {
+  document.getElementById("chatFab").hidden = false;
+}
+
+function renderCustomerMessages(messages) {
+  const container = document.getElementById("customerChatMessages");
+  container.innerHTML = messages
+    .map((m) => {
+      const time = new Date(m.created_at).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
+      const role = m.sender_role === "team" ? "team" : "customer";
+      return `<div class="chat-bubble chat-bubble-${role}"><span>${m.body}</span><time>${time}</time></div>`;
+    })
+    .join("");
+  container.scrollTop = container.scrollHeight;
+}
+
+async function loadCustomerMessages() {
+  const orderId = localStorage.getItem("fm-last-order-id");
+  if (!orderId) return;
+  const res = await fetch(`${API_BASE_URL}/orders/${orderId}/messages`);
+  if (!res.ok) return;
+  renderCustomerMessages(await res.json());
+}
+
+function setupCustomerChat() {
+  const orderId = localStorage.getItem("fm-last-order-id");
+  if (orderId) showChatWidget();
+
+  document.getElementById("chatFab").addEventListener("click", () => {
+    const panel = document.getElementById("customerChatPanel");
+    const opening = panel.hidden;
+    panel.hidden = !opening;
+    clearInterval(customerChatPollInterval);
+    if (opening) {
+      loadCustomerMessages();
+      customerChatPollInterval = setInterval(loadCustomerMessages, 5000);
+    }
+  });
+
+  document.getElementById("customerChatClose").addEventListener("click", () => {
+    document.getElementById("customerChatPanel").hidden = true;
+    clearInterval(customerChatPollInterval);
+  });
+
+  document.getElementById("customerChatForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const input = document.getElementById("customerChatInput");
+    const body = input.value.trim();
+    const orderId = localStorage.getItem("fm-last-order-id");
+    if (!body || !orderId) return;
+    input.value = "";
+
+    const { data } = await supabaseClient.auth.getSession();
+    const token = data.session ? data.session.access_token : null;
+
+    await fetch(`${API_BASE_URL}/orders/${orderId}/messages`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ body }),
+    });
+    loadCustomerMessages();
+  });
+}
+
 function init() {
   loadCart();
   renderGrid("grid-hortalizas", "hortalizas");
@@ -348,6 +422,7 @@ function init() {
   setupCartControls();
   renderCart();
   setupAuth();
+  setupCustomerChat();
   setupHeroRotation();
   setupSectionVideos();
   setupAutoplayUnlock();

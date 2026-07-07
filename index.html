@@ -153,6 +153,19 @@
   </div>
 </div>
 
+<button class="chat-fab" id="chatFab" hidden aria-label="Chat sobre tu pedido">💬</button>
+<div class="customer-chat-panel" id="customerChatPanel" hidden>
+  <div class="customer-chat-head">
+    <span>Chat sobre tu pedido</span>
+    <button class="login-modal-close" id="customerChatClose" aria-label="Cerrar">✕</button>
+  </div>
+  <div class="order-chat-messages" id="customerChatMessages"></div>
+  <form class="order-chat-form" id="customerChatForm">
+    <input type="text" class="order-chat-input" id="customerChatInput" placeholder="Escribe un mensaje..." maxlength="1000" required>
+    <button type="submit" class="btn-small">Enviar</button>
+  </form>
+</div>
+
 <script src="script.js" defer></script>
 </body>
 </html>

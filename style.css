@@ -873,3 +873,113 @@ a { color: inherit; text-decoration: none; }
   gap: 8px !important;
 }
 .product-active-label input { width: auto; }
+
+/* Chat por pedido */
+.chat-toggle-btn { margin-top: 4px; }
+
+.order-chat {
+  margin-top: 12px;
+  border-top: 1px solid oklch(0.18 0.02 256 / 0.1);
+  padding-top: 12px;
+}
+
+.order-chat-messages {
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.chat-bubble {
+  max-width: 80%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.chat-bubble time { font-size: 10px; color: oklch(1 0 0 / 0.7); align-self: flex-end; }
+
+.chat-bubble-customer {
+  align-self: flex-start;
+  background: var(--bg);
+  border: 1px solid oklch(0.18 0.02 256 / 0.12);
+  color: var(--ink);
+}
+.chat-bubble-customer time { color: var(--muted); }
+
+.chat-bubble-team {
+  align-self: flex-end;
+  background: var(--primary);
+  color: white;
+}
+
+.order-chat-form {
+  display: flex;
+  gap: 8px;
+}
+
+.order-chat-input {
+  flex: 1;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid oklch(0.18 0.02 256 / 0.18);
+  background: var(--bg);
+}
+.order-chat-input:focus { outline: none; border-color: var(--primary); }
+
+/* Widget de chat flotante (frontend del cliente) */
+.chat-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: var(--primary);
+  color: white;
+  font-size: 22px;
+  cursor: pointer;
+  box-shadow: 0 10px 24px oklch(0.18 0.02 256 / 0.3);
+  z-index: 70;
+  transition: transform 0.15s ease;
+}
+.chat-fab:hover { transform: scale(1.06); }
+
+.customer-chat-panel {
+  position: fixed;
+  bottom: 92px;
+  right: 24px;
+  width: min(340px, calc(100vw - 48px));
+  background: var(--bg);
+  border-radius: var(--radius);
+  box-shadow: 0 20px 50px oklch(0.15 0.03 256 / 0.3);
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  max-height: 420px;
+}
+
+.customer-chat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  font-weight: 700;
+  font-size: 14px;
+  border-bottom: 1px solid oklch(0.18 0.02 256 / 0.1);
+}
+
+.customer-chat-panel .order-chat-messages { padding: 14px 16px 0; flex: 1; }
+.customer-chat-panel .order-chat-form { padding: 12px 16px 16px; }
+
+@media (max-width: 780px) {
+  .chat-fab { bottom: 16px; right: 16px; }
+  .customer-chat-panel { bottom: 84px; right: 16px; }
+}

@@ -14,6 +14,8 @@ const currency = new Intl.NumberFormat("es-CO", {
 });
 
 let productsById = {}; // se llena al cargar productos, para mostrar nombres en los pedidos
+let openChatOrderId = null;
+let chatPollInterval = null;
 
 function setState(html) {
   document.getElementById("adminState").innerHTML = html;
@@ -94,10 +96,35 @@ function renderOrders(orders) {
                 .join("")}
             </select>
           </label>
+          <button class="btn-small chat-toggle-btn" data-id="${order.id}">💬 Chat</button>
+          <div class="order-chat" data-id="${order.id}" hidden>
+            <div class="order-chat-messages"></div>
+            <form class="order-chat-form">
+              <input type="text" class="order-chat-input" placeholder="Escribe un mensaje..." maxlength="1000" required>
+              <button type="submit" class="btn-small">Enviar</button>
+            </form>
+          </div>
         </div>
       `;
     })
     .join("");
+
+  list.querySelectorAll(".chat-toggle-btn").forEach((btn) => {
+    btn.addEventListener("click", () => toggleChat(btn.dataset.id));
+  });
+
+  list.querySelectorAll(".order-chat-form").forEach((form) => {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const orderId = form.closest(".order-chat").dataset.id;
+      const input = form.querySelector(".order-chat-input");
+      const body = input.value.trim();
+      if (!body) return;
+      input.value = "";
+      await authedFetch(`/orders/${orderId}/messages`, { method: "POST", body: JSON.stringify({ body }) });
+      loadMessages(orderId);
+    });
+  });
 
   list.querySelectorAll(".order-status-select").forEach((select) => {
     select.addEventListener("change", async () => {
@@ -116,6 +143,46 @@ function renderOrders(orders) {
       select.disabled = false;
     });
   });
+}
+
+/* Chat por pedido */
+function renderMessages(orderId, messages) {
+  const container = document.querySelector(`.order-chat[data-id="${orderId}"] .order-chat-messages`);
+  if (!container) return;
+  container.innerHTML = messages
+    .map((m) => {
+      const time = new Date(m.created_at).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
+      return `<div class="chat-bubble chat-bubble-${m.sender_role}"><span>${m.body}</span><time>${time}</time></div>`;
+    })
+    .join("");
+  container.scrollTop = container.scrollHeight;
+}
+
+async function loadMessages(orderId) {
+  const res = await authedFetch(`/orders/${orderId}/messages`);
+  if (!res.ok) return;
+  const messages = await res.json();
+  renderMessages(orderId, messages);
+}
+
+function toggleChat(orderId) {
+  const chatEl = document.querySelector(`.order-chat[data-id="${orderId}"]`);
+  if (!chatEl) return;
+
+  if (openChatOrderId === orderId) {
+    chatEl.hidden = true;
+    openChatOrderId = null;
+    clearInterval(chatPollInterval);
+    return;
+  }
+
+  document.querySelectorAll(".order-chat").forEach((el) => (el.hidden = true));
+  clearInterval(chatPollInterval);
+
+  chatEl.hidden = false;
+  openChatOrderId = orderId;
+  loadMessages(orderId);
+  chatPollInterval = setInterval(() => loadMessages(orderId), 5000);
 }
 
 async function loadOrders() {
@@ -195,6 +262,11 @@ function renderProducts(products) {
 
 async function loadProducts() {
   const res = await authedFetch("/admin/products");
+  if (res.status === 403) {
+    // el despachador no administra productos: se oculta la pestaña, no es un error
+    document.querySelector('.admin-tab[data-tab="products"]').hidden = true;
+    return;
+  }
   if (!res.ok) return;
   const products = await res.json();
   renderProducts(products);

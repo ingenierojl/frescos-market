@@ -435,6 +435,14 @@ async function loadCustomerMessages() {
       cache: "no-store",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
+    if (res.status === 404) {
+      // el pedido ya no existe (lo eliminaron): dejar de apuntar a el
+      localStorage.removeItem("fm-last-order-id");
+      clearInterval(customerChatPollInterval);
+      document.getElementById("customerChatPanel").hidden = true;
+      document.getElementById("chatFab").hidden = true;
+      return;
+    }
     if (!res.ok) return;
     renderCustomerMessages(await res.json());
   } catch (e) {

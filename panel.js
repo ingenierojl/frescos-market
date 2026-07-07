@@ -183,6 +183,13 @@ function renderMessages(orderId, messages) {
 
 async function loadMessages(orderId) {
   const res = await authedFetch(`/orders/${orderId}/messages`);
+  if (res.status === 404) {
+    // el pedido fue eliminado: dejar de refrescar su chat y recargar la lista
+    clearInterval(chatPollInterval);
+    if (openChatOrderId === orderId) openChatOrderId = null;
+    loadOrders();
+    return;
+  }
   if (!res.ok) return;
   const messages = await res.json();
   renderMessages(orderId, messages);

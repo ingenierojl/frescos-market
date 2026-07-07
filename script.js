@@ -366,7 +366,13 @@ function renderCustomerMessages(messages) {
 async function loadCustomerMessages() {
   const orderId = localStorage.getItem("fm-last-order-id");
   if (!orderId) return;
-  const res = await fetch(`${API_BASE_URL}/orders/${orderId}/messages`);
+
+  const { data } = await supabaseClient.auth.getSession();
+  const token = data.session ? data.session.access_token : null;
+
+  const res = await fetch(`${API_BASE_URL}/orders/${orderId}/messages`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
   if (!res.ok) return;
   renderCustomerMessages(await res.json());
 }

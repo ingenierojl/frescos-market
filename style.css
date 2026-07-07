@@ -875,7 +875,11 @@ a { color: inherit; text-decoration: none; }
 .product-active-label input { width: auto; }
 
 /* Chat por pedido */
-.chat-toggle-btn { margin-top: 4px; }
+.order-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
 
 .order-chat {
   margin-top: 12px;

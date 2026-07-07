@@ -405,6 +405,7 @@ function setupScrollReveal() {
 
 /* Chat con el cliente sobre su ultimo pedido */
 let customerChatChannel = null;
+let customerChatPollInterval = null;
 
 function showChatWidget() {
   document.getElementById("chatFab").hidden = false;
@@ -483,16 +484,24 @@ function setupCustomerChat() {
     const opening = panel.hidden;
     console.log("[chat] click en el boton de chat. opening =", opening);
     panel.hidden = !opening;
+    clearInterval(customerChatPollInterval);
     if (opening) {
       loadCustomerMessages();
       const currentOrderId = localStorage.getItem("fm-last-order-id");
       console.log("[chat] currentOrderId =", currentOrderId);
-      if (currentOrderId) subscribeToOrderMessages(currentOrderId);
+      if (currentOrderId) {
+        subscribeToOrderMessages(currentOrderId);
+        // Respaldo mientras confirmamos que realtime entrega bien: polling
+        // cada 5s (el navegador puede estirarlo hasta ~60s en segundo plano,
+        // pero garantiza que los mensajes llegan aunque el canal falle).
+        customerChatPollInterval = setInterval(loadCustomerMessages, 5000);
+      }
     }
   });
 
   document.getElementById("customerChatClose").addEventListener("click", () => {
     document.getElementById("customerChatPanel").hidden = true;
+    clearInterval(customerChatPollInterval);
   });
 
   // Respaldo: si por lo que sea el canal realtime se cae, al volver a la

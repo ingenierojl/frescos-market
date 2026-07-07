@@ -16,6 +16,8 @@ const currency = new Intl.NumberFormat("es-CO", {
 let productsById = {}; // se llena al cargar productos, para mostrar nombres en los pedidos
 let openChatOrderId = null;
 let chatChannel = null;
+let chatPollInterval = null;
+let isAdmin = false; // true si /admin/products respondio OK (el despachador recibe 403 ahi)
 
 function setState(html) {
   document.getElementById("adminState").innerHTML = html;
@@ -96,7 +98,10 @@ function renderOrders(orders) {
                 .join("")}
             </select>
           </label>
-          <button class="btn-small chat-toggle-btn" data-id="${order.id}">💬 Chat</button>
+          <div class="order-actions">
+            <button class="btn-small chat-toggle-btn" data-id="${order.id}">💬 Chat</button>
+            ${isAdmin ? `<button class="btn-small danger order-delete-btn" data-id="${order.id}">Eliminar</button>` : ""}
+          </div>
           <div class="order-chat" data-id="${order.id}" hidden>
             <div class="order-chat-messages"></div>
             <form class="order-chat-form">
@@ -111,6 +116,24 @@ function renderOrders(orders) {
 
   list.querySelectorAll(".chat-toggle-btn").forEach((btn) => {
     btn.addEventListener("click", () => toggleChat(btn.dataset.id));
+  });
+
+  list.querySelectorAll(".order-delete-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const orderId = btn.dataset.id;
+      const card = btn.closest(".order-card");
+      const customer = card.querySelector(".order-customer").textContent;
+      if (!confirm(`¿Eliminar el pedido de ${customer}? Esto borra también sus mensajes y no se puede deshacer.`)) return;
+
+      btn.disabled = true;
+      const res = await authedFetch(`/admin/orders/${orderId}`, { method: "DELETE" });
+      if (!res.ok) {
+        alert("No se pudo eliminar el pedido.");
+        btn.disabled = false;
+        return;
+      }
+      loadOrders();
+    });
   });
 
   list.querySelectorAll(".order-chat-form").forEach((form) => {
@@ -193,6 +216,7 @@ function toggleChat(orderId) {
     chatEl.hidden = true;
     openChatOrderId = null;
     if (chatChannel) supabaseClient.removeChannel(chatChannel);
+    clearInterval(chatPollInterval);
     return;
   }
 
@@ -202,6 +226,11 @@ function toggleChat(orderId) {
   openChatOrderId = orderId;
   loadMessages(orderId);
   subscribeToOrderMessages(orderId);
+  // Respaldo mientras confirmamos que realtime entrega bien: polling cada 5s
+  // (el navegador puede estirarlo hasta ~60s, pero garantiza que los mensajes
+  // llegan aunque el canal realtime falle).
+  clearInterval(chatPollInterval);
+  chatPollInterval = setInterval(() => loadMessages(orderId), 5000);
 }
 
 // Respaldo: si el canal realtime se cae, al volver a la pestaña igual se
@@ -289,10 +318,12 @@ async function loadProducts() {
   const res = await authedFetch("/admin/products");
   if (res.status === 403) {
     // el despachador no administra productos: se oculta la pestaña, no es un error
+    isAdmin = false;
     document.querySelector('.admin-tab[data-tab="products"]').hidden = true;
     return;
   }
   if (!res.ok) return;
+  isAdmin = true; // solo el admin puede listar productos, sirve para mostrar "Eliminar" en pedidos
   const products = await res.json();
   renderProducts(products);
 }
@@ -366,9 +397,9 @@ async function init() {
   await loadProducts(); // llena productsById antes de mostrar pedidos, para ver nombres en vez de #id
   await loadOrders();
 
-  supabaseClient.auth.onAuthStateChange(() => {
-    loadProducts();
-    loadOrders();
+  supabaseClient.auth.onAuthStateChange(async () => {
+    await loadProducts(); // primero: define isAdmin antes de pintar los pedidos
+    await loadOrders();
   });
 }
 

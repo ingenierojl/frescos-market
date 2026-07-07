@@ -52,4 +52,4 @@ Familia única: **Switzer** (Fontshare, variable, pesos 400/500/600/700/800) —
 
 - `.product-card`: foto real full-bleed arriba, nombre/unidad/precio abajo, stepper +/-, botón agregar.
 - `.cart-drawer`: panel lateral, persistente en `localStorage`.
-- `.btn-whatsapp`: único elemento que conserva el verde de marca de WhatsApp (#25D366) — convención reconocible, no forma parte de la paleta del sitio.
+- `.btn-primary-block`: botón ancho de color primario — "Hacer pedido" en el carrito y "Guardar y continuar" en el modal de datos del cliente. El pedido se guarda en la base de datos vía la API; WhatsApp quedó solo como canal de contacto general (footer), no como parte del checkout.

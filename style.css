@@ -560,20 +560,50 @@ a { color: inherit; text-decoration: none; }
   margin-bottom: 14px;
 }
 
-.btn-whatsapp {
+.btn-primary-block {
   width: 100%;
   border: none;
-  background: var(--whatsapp);
+  background: var(--primary);
   color: white;
+  font-family: inherit;
   font-weight: 700;
   font-size: 15px;
   padding: 14px 0;
   border-radius: 12px;
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  transition: background 0.15s ease, opacity 0.15s ease;
 }
-.btn-whatsapp:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-whatsapp:not(:disabled):hover { opacity: 0.9; }
+.btn-primary-block:hover:not(:disabled) { background: var(--primary-ink); }
+.btn-primary-block:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.order-info-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.order-info-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.order-info-form input {
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid oklch(0.18 0.02 256 / 0.18);
+  background: var(--bg);
+}
+.order-info-form input:focus { outline: none; border-color: var(--primary); }
+
+.order-info-form .btn-primary-block { margin-top: 6px; }
 
 /* Scroll reveal */
 .io-reveal {

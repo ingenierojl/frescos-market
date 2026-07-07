@@ -1,4 +1,5 @@
-const WHATSAPP_NUMBER = "573008079369"; // +57 300 807 9369, formato internacional sin '+' ni espacios
+const WHATSAPP_NUMBER = "573008079369"; // +57 300 807 9369, contacto general (no para hacer el pedido)
+const API_BASE_URL = "https://frescos-market-api.onrender.com/api/v1";
 // supabaseClient, renderAuthUI y setupAuth vienen de auth.js (compartido con panel-fm93k.html)
 
 const PRODUCTS = [
@@ -103,7 +104,7 @@ function renderCart() {
   const itemsEl = document.getElementById("cartItems");
   const totalEl = document.getElementById("cartTotal");
   const countEl = document.getElementById("cartCount");
-  const sendBtn = document.getElementById("sendWhatsapp");
+  const placeOrderBtn = document.getElementById("placeOrderBtn");
 
   const entries = Object.entries(cart).filter(([, qty]) => qty > 0);
   const totalCount = entries.reduce((sum, [, qty]) => sum + qty, 0);
@@ -112,7 +113,7 @@ function renderCart() {
   if (entries.length === 0) {
     itemsEl.innerHTML = '<p class="cart-empty">Tu carrito está vacío. Agrega productos del catálogo.</p>';
     totalEl.textContent = currency.format(0);
-    sendBtn.disabled = true;
+    placeOrderBtn.disabled = true;
     return;
   }
 
@@ -141,7 +142,7 @@ function renderCart() {
     .join("");
 
   totalEl.textContent = currency.format(total);
-  sendBtn.disabled = false;
+  placeOrderBtn.disabled = false;
 
   itemsEl.querySelectorAll(".cart-item").forEach((row) => {
     const id = row.dataset.id;
@@ -164,27 +165,68 @@ function renderCart() {
   });
 }
 
-function buildWhatsappMessage() {
+/* Datos del cliente (nombre/telefono/direccion), guardados una vez por navegador */
+function getCustomerInfo() {
+  try {
+    return JSON.parse(localStorage.getItem("fm-customer-info") || "null");
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveCustomerInfo(info) {
+  localStorage.setItem("fm-customer-info", JSON.stringify(info));
+}
+
+function openOrderInfoModal() {
+  document.getElementById("orderInfoModal").classList.add("open");
+}
+
+function closeOrderInfoModal() {
+  document.getElementById("orderInfoModal").classList.remove("open");
+}
+
+async function placeOrder() {
+  const info = getCustomerInfo();
   const entries = Object.entries(cart).filter(([, qty]) => qty > 0);
-  let total = 0;
-  const lines = entries.map(([id, qty]) => {
-    const p = PRODUCTS.find((prod) => prod.id === id);
-    const subtotal = p.price * qty;
-    total += subtotal;
-    return `• ${p.name} x${qty} (${p.unit}) — ${currency.format(subtotal)}`;
-  });
 
-  const message = [
-    "¡Hola! Quiero pedir lo siguiente:",
-    "",
-    ...lines,
-    "",
-    `Total: ${currency.format(total)}`,
-    "",
-    "Nombre y dirección de entrega:",
-  ].join("\n");
+  const items = entries.map(([id, qty]) => ({ product_slug: id, quantity: qty }));
 
-  return message;
+  const placeOrderBtn = document.getElementById("placeOrderBtn");
+  placeOrderBtn.disabled = true;
+  placeOrderBtn.textContent = "Enviando…";
+
+  try {
+    const { data } = await supabaseClient.auth.getSession();
+    const token = data.session ? data.session.access_token : null;
+
+    const res = await fetch(`${API_BASE_URL}/orders`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        customer_name: info.name,
+        customer_phone: info.phone,
+        delivery_address: info.address,
+        items,
+      }),
+    });
+
+    if (!res.ok) throw new Error("order creation failed");
+
+    Object.keys(cart).forEach((id) => delete cart[id]);
+    saveCart();
+    renderCart();
+    closeCart();
+    alert("¡Pedido recibido! Te contactaremos para confirmar la entrega.");
+  } catch (e) {
+    alert("No se pudo enviar el pedido. Verifica tu conexión e intenta de nuevo.");
+  } finally {
+    placeOrderBtn.disabled = false;
+    placeOrderBtn.textContent = "Hacer pedido";
+  }
 }
 
 function openCart() {
@@ -202,10 +244,28 @@ function setupCartControls() {
   document.getElementById("cartClose").addEventListener("click", closeCart);
   document.getElementById("cartOverlay").addEventListener("click", closeCart);
 
-  document.getElementById("sendWhatsapp").addEventListener("click", () => {
-    const message = buildWhatsappMessage();
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank", "noopener");
+  document.getElementById("placeOrderBtn").addEventListener("click", () => {
+    if (getCustomerInfo()) {
+      placeOrder();
+    } else {
+      openOrderInfoModal();
+    }
+  });
+
+  document.getElementById("orderInfoClose").addEventListener("click", closeOrderInfoModal);
+  document.getElementById("orderInfoModal").addEventListener("click", (e) => {
+    if (e.target.id === "orderInfoModal") closeOrderInfoModal();
+  });
+
+  document.getElementById("orderInfoForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    saveCustomerInfo({
+      name: document.getElementById("orderInfoName").value.trim(),
+      phone: document.getElementById("orderInfoPhone").value.trim(),
+      address: document.getElementById("orderInfoAddress").value.trim(),
+    });
+    closeOrderInfoModal();
+    placeOrder();
   });
 
   document.getElementById("footerWhatsapp").href = `https://wa.me/${WHATSAPP_NUMBER}`;

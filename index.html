@@ -98,8 +98,8 @@
         </div>
         <div class="step io-reveal">
           <span class="step-num">3</span>
-          <h3>Envía por WhatsApp</h3>
-          <p>Tu pedido llega ya redactado, solo confirmas la entrega.</p>
+          <h3>Haz tu pedido</h3>
+          <p>Queda registrado y lo prepara nuestro equipo.</p>
         </div>
       </div>
     </div>
@@ -107,7 +107,7 @@
 </main>
 
 <footer class="site-footer">
-  <p>Frescos Market — pedidos por WhatsApp: <a id="footerWhatsapp" href="#">+57 300 807 9369</a></p>
+  <p>Frescos Market — ¿dudas? Escríbenos: <a id="footerWhatsapp" href="#">+57 300 807 9369</a></p>
 </footer>
 
 <div class="cart-overlay" id="cartOverlay"></div>
@@ -124,11 +124,34 @@
       <span>Total</span>
       <span id="cartTotal">$0</span>
     </div>
-    <button class="btn-whatsapp" id="sendWhatsapp" disabled>
-      Enviar pedido por WhatsApp
+    <button class="btn-primary-block" id="placeOrderBtn" disabled>
+      Hacer pedido
     </button>
   </div>
 </aside>
+
+<div class="login-modal-overlay" id="orderInfoModal">
+  <div class="login-modal">
+    <button class="login-modal-close" id="orderInfoClose" aria-label="Cerrar">✕</button>
+    <h2>Antes de continuar</h2>
+    <p>Necesitamos estos datos para entregarte el pedido</p>
+    <form id="orderInfoForm" class="order-info-form">
+      <label>
+        Nombre completo
+        <input type="text" id="orderInfoName" required>
+      </label>
+      <label>
+        Teléfono
+        <input type="tel" id="orderInfoPhone" required>
+      </label>
+      <label>
+        Dirección de entrega
+        <input type="text" id="orderInfoAddress" required>
+      </label>
+      <button type="submit" class="btn-primary-block">Guardar y continuar</button>
+    </form>
+  </div>
+</div>
 
 <script src="script.js" defer></script>
 </body>

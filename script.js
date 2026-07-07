@@ -257,7 +257,10 @@ async function placeOrder() {
 
     const order = await res.json();
     localStorage.setItem("fm-last-order-id", order.id);
+    customerChatPrimed = false; // nuevo pedido: reiniciar la linea base del chat
+    lastSeenMessageCount = 0;
     showChatWidget();
+    startCustomerChatBackground(); // empezar a escuchar ya, sin abrir el widget
 
     Object.keys(cart).forEach((id) => delete cart[id]);
     saveCart();
@@ -406,9 +409,20 @@ function setupScrollReveal() {
 /* Chat con el cliente sobre su ultimo pedido */
 let customerChatChannel = null;
 let customerChatPollInterval = null;
+let lastSeenMessageCount = 0; // cuantos mensajes ya "vio" el cliente (con el chat abierto)
+let customerChatPrimed = false; // ya se cargo el historial inicial
 
 function showChatWidget() {
   document.getElementById("chatFab").hidden = false;
+}
+
+function isChatPanelOpen() {
+  const panel = document.getElementById("customerChatPanel");
+  return panel && !panel.hidden;
+}
+
+function setChatUnread(on) {
+  document.getElementById("chatFab").classList.toggle("has-unread", on);
 }
 
 function renderCustomerMessages(messages) {
@@ -439,12 +453,29 @@ async function loadCustomerMessages() {
       // el pedido ya no existe (lo eliminaron): dejar de apuntar a el
       localStorage.removeItem("fm-last-order-id");
       clearInterval(customerChatPollInterval);
+      if (customerChatChannel) supabaseClient.removeChannel(customerChatChannel);
       document.getElementById("customerChatPanel").hidden = true;
       document.getElementById("chatFab").hidden = true;
       return;
     }
     if (!res.ok) return;
-    renderCustomerMessages(await res.json());
+
+    const messages = await res.json();
+    renderCustomerMessages(messages);
+
+    if (isChatPanelOpen()) {
+      // el cliente esta mirando: se marcan como vistos, sin puntito
+      lastSeenMessageCount = messages.length;
+      setChatUnread(false);
+    } else if (!customerChatPrimed) {
+      // primera carga con el chat cerrado: el historial ya existente no
+      // cuenta como "nuevo", solo se toma como linea base
+      lastSeenMessageCount = messages.length;
+    } else if (messages.length > lastSeenMessageCount) {
+      // llego algo nuevo con el chat cerrado: avisar con el puntito
+      setChatUnread(true);
+    }
+    customerChatPrimed = true;
   } catch (e) {
     console.error("[chat] fallo al consultar mensajes", e);
   }
@@ -483,40 +514,57 @@ async function subscribeToOrderMessages(orderId) {
   }
 }
 
+// Empieza a escuchar en segundo plano (sin abrir el widget): realtime para
+// recibir al instante + un poll lento de respaldo cada 8s por si realtime
+// falla. Asi el cliente recibe mensajes aunque nunca toque el icono.
+function startCustomerChatBackground() {
+  const orderId = localStorage.getItem("fm-last-order-id");
+  if (!orderId) return;
+  subscribeToOrderMessages(orderId);
+  loadCustomerMessages(); // carga inicial y fija la linea base
+  clearInterval(customerChatPollInterval);
+  customerChatPollInterval = setInterval(loadCustomerMessages, 8000);
+}
+
 function setupCustomerChat() {
   const orderId = localStorage.getItem("fm-last-order-id");
-  if (orderId) showChatWidget();
+  if (orderId) {
+    showChatWidget();
+    startCustomerChatBackground();
+  }
 
   document.getElementById("chatFab").addEventListener("click", () => {
     const panel = document.getElementById("customerChatPanel");
     const opening = panel.hidden;
-    console.log("[chat] click en el boton de chat. opening =", opening);
     panel.hidden = !opening;
-    clearInterval(customerChatPollInterval);
     if (opening) {
+      setChatUnread(false); // al abrir, se marca como visto (quita el puntito)
       loadCustomerMessages();
       const currentOrderId = localStorage.getItem("fm-last-order-id");
-      console.log("[chat] currentOrderId =", currentOrderId);
       if (currentOrderId) {
-        subscribeToOrderMessages(currentOrderId);
-        // Respaldo mientras confirmamos que realtime entrega bien: polling
-        // cada 5s (el navegador puede estirarlo hasta ~60s en segundo plano,
-        // pero garantiza que los mensajes llegan aunque el canal falle).
+        subscribeToOrderMessages(currentOrderId); // reasegura el canal
+        // con el chat abierto, respaldo mas rapido (2.5s)
+        clearInterval(customerChatPollInterval);
         customerChatPollInterval = setInterval(loadCustomerMessages, 2500);
       }
+    } else {
+      // al cerrar, vuelve al ritmo lento de segundo plano (sigue escuchando)
+      clearInterval(customerChatPollInterval);
+      customerChatPollInterval = setInterval(loadCustomerMessages, 8000);
     }
   });
 
   document.getElementById("customerChatClose").addEventListener("click", () => {
     document.getElementById("customerChatPanel").hidden = true;
+    // no se detiene la escucha: vuelve al ritmo lento de segundo plano
     clearInterval(customerChatPollInterval);
+    customerChatPollInterval = setInterval(loadCustomerMessages, 8000);
   });
 
-  // Respaldo: si por lo que sea el canal realtime se cae, al volver a la
-  // pestana igual se refresca una vez (no depende de esto para funcionar).
+  // Al volver a la pestana, refrescar de una (los timers se throttlean en
+  // segundo plano; esto garantiza que el puntito/mensajes se actualicen ya).
   document.addEventListener("visibilitychange", () => {
-    const panel = document.getElementById("customerChatPanel");
-    if (!document.hidden && panel && !panel.hidden) loadCustomerMessages();
+    if (!document.hidden && localStorage.getItem("fm-last-order-id")) loadCustomerMessages();
   });
 
   document.getElementById("customerChatForm").addEventListener("submit", async (e) => {

@@ -237,7 +237,7 @@ function toggleChat(orderId) {
   // (el navegador puede estirarlo hasta ~60s, pero garantiza que los mensajes
   // llegan aunque el canal realtime falle).
   clearInterval(chatPollInterval);
-  chatPollInterval = setInterval(() => loadMessages(orderId), 5000);
+  chatPollInterval = setInterval(() => loadMessages(orderId), 2500);
 }
 
 // Respaldo: si el canal realtime se cae, al volver a la pestaña igual se

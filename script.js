@@ -502,7 +502,7 @@ function setupCustomerChat() {
         // Respaldo mientras confirmamos que realtime entrega bien: polling
         // cada 5s (el navegador puede estirarlo hasta ~60s en segundo plano,
         // pero garantiza que los mensajes llegan aunque el canal falle).
-        customerChatPollInterval = setInterval(loadCustomerMessages, 5000);
+        customerChatPollInterval = setInterval(loadCustomerMessages, 2500);
       }
     }
   });

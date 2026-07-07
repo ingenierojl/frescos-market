@@ -481,10 +481,12 @@ function setupCustomerChat() {
   document.getElementById("chatFab").addEventListener("click", () => {
     const panel = document.getElementById("customerChatPanel");
     const opening = panel.hidden;
+    console.log("[chat] click en el boton de chat. opening =", opening);
     panel.hidden = !opening;
     if (opening) {
       loadCustomerMessages();
       const currentOrderId = localStorage.getItem("fm-last-order-id");
+      console.log("[chat] currentOrderId =", currentOrderId);
       if (currentOrderId) subscribeToOrderMessages(currentOrderId);
     }
   });

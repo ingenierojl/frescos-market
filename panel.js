@@ -185,6 +185,12 @@ function toggleChat(orderId) {
   chatPollInterval = setInterval(() => loadMessages(orderId), 5000);
 }
 
+// El navegador pausa el setInterval en segundo plano (pantalla bloqueada,
+// cambio de pestaña) -- al volver, refresca ya el chat que este abierto.
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && openChatOrderId) loadMessages(openChatOrderId);
+});
+
 async function loadOrders() {
   const token = await getAccessToken();
   if (!token) {

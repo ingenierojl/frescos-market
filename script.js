@@ -456,6 +456,14 @@ function setupCustomerChat() {
     clearInterval(customerChatPollInterval);
   });
 
+  // Los celulares pausan el setInterval cuando la pestaña queda en segundo
+  // plano (pantalla bloqueada, cambio de app) -- al volver, refresca ya
+  // mismo en vez de esperar a que el intervalo retome solo.
+  document.addEventListener("visibilitychange", () => {
+    const panel = document.getElementById("customerChatPanel");
+    if (!document.hidden && panel && !panel.hidden) loadCustomerMessages();
+  });
+
   document.getElementById("customerChatForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const input = document.getElementById("customerChatInput");

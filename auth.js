@@ -45,12 +45,12 @@ function ensureLoginModal() {
   });
 
   overlay.querySelector('[data-provider="google"]').addEventListener("click", async () => {
-    // window.location.origin no alcanza en GitHub Pages: el sitio vive en una
-    // subcarpeta (/frescos-market/), no en la raiz del dominio como en Netlify.
-    // .href conserva la carpeta actual para volver exactamente ahi.
+    // origin + pathname: conserva la subcarpeta (/frescos-market/ en GitHub
+    // Pages) pero SIN el hash/query actual. Con .href el "#" de la pagina se
+    // duplicaba (##access_token=...) y Supabase no podia leer el token.
     await supabaseClient.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.href },
+      options: { redirectTo: window.location.origin + window.location.pathname },
     });
   });
 }

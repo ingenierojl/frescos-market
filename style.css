@@ -83,6 +83,60 @@ a { color: inherit; text-decoration: none; }
 }
 .cart-btn:hover { background: var(--primary-ink); transform: scale(1.05); }
 
+/* Auth */
+.auth-area { display: flex; align-items: center; }
+
+.btn-login {
+  border: 1px solid oklch(0.18 0.02 256 / 0.15);
+  background: var(--bg);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.btn-login:hover { border-color: var(--primary); background: var(--surface); }
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-logout {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.btn-logout:hover { color: var(--accent); }
+
+@media (max-width: 780px) {
+  .user-name { display: none; }
+}
+
 .cart-count {
   position: absolute;
   top: -3px;

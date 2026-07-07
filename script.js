@@ -1,5 +1,10 @@
 const WHATSAPP_NUMBER = "573008079369"; // +57 300 807 9369, formato internacional sin '+' ni espacios
 
+const SUPABASE_URL = "https://ezpqfzjbauxluvxmqxvj.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_p_8lr7P8Ll3aqe9ySpNOQQ_Rv-1BXUf"; // publica, segura de exponer en el frontend
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 const PRODUCTS = [
   { id: "papa", name: "Papa", unit: "por libra", price: 1900, photo: "assets/products/camote.jpg", category: "hortalizas" },
   { id: "tomate", name: "Tomate", unit: "por libra", price: 2200, photo: "assets/products/tomate.jpg", category: "hortalizas" },
@@ -210,6 +215,44 @@ function setupCartControls() {
   document.getElementById("footerWhatsapp").href = `https://wa.me/${WHATSAPP_NUMBER}`;
 }
 
+/* Login con Google (Supabase Auth) */
+function renderAuthUI(session) {
+  const authArea = document.getElementById("authArea");
+  const user = session && session.user;
+
+  if (user) {
+    const name = user.user_metadata?.full_name || user.email;
+    const avatar = user.user_metadata?.avatar_url;
+    authArea.innerHTML = `
+      <div class="user-chip">
+        ${avatar ? `<img class="user-avatar" src="${avatar}" alt="">` : ""}
+        <span class="user-name">${name}</span>
+        <button class="btn-logout" id="logoutBtn">Salir</button>
+      </div>
+    `;
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await supabaseClient.auth.signOut();
+    });
+  } else {
+    authArea.innerHTML = `<button class="btn-login" id="loginBtn">Iniciar sesión</button>`;
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+      await supabaseClient.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin },
+      });
+    });
+  }
+}
+
+async function setupAuth() {
+  const { data } = await supabaseClient.auth.getSession();
+  renderAuthUI(data.session);
+
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    renderAuthUI(session);
+  });
+}
+
 /* Hero: crossfade entre los 2 videos cada 9s, como en NIDO */
 function setupHeroRotation() {
   const videos = [document.getElementById("heroVideo1"), document.getElementById("heroVideo2")];
@@ -286,6 +329,7 @@ function init() {
   setupProductCards();
   setupCartControls();
   renderCart();
+  setupAuth();
   setupHeroRotation();
   setupSectionVideos();
   setupAutoplayUnlock();

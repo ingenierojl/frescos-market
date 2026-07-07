@@ -165,7 +165,9 @@ function renderCart() {
   });
 }
 
-/* Datos del cliente (nombre/telefono/direccion), guardados una vez por navegador */
+/* Datos de entrega (telefono/direccion/departamento/ciudad) -- el nombre ya no
+   se pide, viene del login de Google. Se cachean en localStorage para prefill
+   instantaneo y ademas se guardan en la base de datos (perfil por usuario). */
 function getCustomerInfo() {
   try {
     return JSON.parse(localStorage.getItem("fm-customer-info") || "null");
@@ -178,7 +180,43 @@ function saveCustomerInfo(info) {
   localStorage.setItem("fm-customer-info", JSON.stringify(info));
 }
 
+async function prefillOrderInfoForm() {
+  let info = getCustomerInfo();
+
+  if (!info) {
+    try {
+      const { data } = await supabaseClient.auth.getSession();
+      const token = data.session ? data.session.access_token : null;
+      if (token) {
+        const res = await fetch(`${API_BASE_URL}/users/me/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const profile = await res.json();
+          info = {
+            phone: profile.phone,
+            address: profile.address,
+            department: profile.department,
+            city: profile.city,
+          };
+          saveCustomerInfo(info);
+        }
+      }
+    } catch (e) {
+      /* sin perfil guardado todavia, se llena vacio */
+    }
+  }
+
+  if (info) {
+    document.getElementById("orderInfoPhone").value = info.phone || "";
+    document.getElementById("orderInfoAddress").value = info.address || "";
+    if (info.department) document.getElementById("orderInfoDepartment").value = info.department;
+    if (info.city) document.getElementById("orderInfoCity").value = info.city;
+  }
+}
+
 function openOrderInfoModal() {
+  prefillOrderInfoForm();
   document.getElementById("orderInfoModal").classList.add("open");
 }
 
@@ -207,9 +245,10 @@ async function placeOrder() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({
-        customer_name: info.name,
         customer_phone: info.phone,
         delivery_address: info.address,
+        department: info.department,
+        city: info.city,
         items,
       }),
     });
@@ -248,7 +287,13 @@ function setupCartControls() {
   document.getElementById("cartClose").addEventListener("click", closeCart);
   document.getElementById("cartOverlay").addEventListener("click", closeCart);
 
-  document.getElementById("placeOrderBtn").addEventListener("click", () => {
+  document.getElementById("placeOrderBtn").addEventListener("click", async () => {
+    const { data } = await supabaseClient.auth.getSession();
+    if (!data.session) {
+      alert("Inicia sesión con Google para hacer tu pedido.");
+      openLoginModal();
+      return;
+    }
     if (getCustomerInfo()) {
       placeOrder();
     } else {
@@ -261,14 +306,28 @@ function setupCartControls() {
     if (e.target.id === "orderInfoModal") closeOrderInfoModal();
   });
 
-  document.getElementById("orderInfoForm").addEventListener("submit", (e) => {
+  document.getElementById("orderInfoForm").addEventListener("submit", async (e) => {
     e.preventDefault();
-    saveCustomerInfo({
-      name: document.getElementById("orderInfoName").value.trim(),
+    const info = {
       phone: document.getElementById("orderInfoPhone").value.trim(),
       address: document.getElementById("orderInfoAddress").value.trim(),
-    });
+      department: document.getElementById("orderInfoDepartment").value,
+      city: document.getElementById("orderInfoCity").value,
+    };
+    saveCustomerInfo(info);
     closeOrderInfoModal();
+
+    // guarda tambien en el perfil de la base de datos, no solo en este navegador
+    const { data } = await supabaseClient.auth.getSession();
+    const token = data.session ? data.session.access_token : null;
+    if (token) {
+      fetch(`${API_BASE_URL}/users/me/profile`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(info),
+      }).catch(() => {});
+    }
+
     placeOrder();
   });
 

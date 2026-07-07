@@ -137,16 +137,25 @@
     <p>Necesitamos estos datos para entregarte el pedido</p>
     <form id="orderInfoForm" class="order-info-form">
       <label>
-        Nombre completo
-        <input type="text" id="orderInfoName" required>
-      </label>
-      <label>
         Teléfono
         <input type="tel" id="orderInfoPhone" required>
       </label>
       <label>
         Dirección de entrega
-        <input type="text" id="orderInfoAddress" required>
+        <input type="text" id="orderInfoAddress" placeholder="Cra / Calle, número" required>
+      </label>
+      <label>
+        Departamento
+        <select id="orderInfoDepartment" required>
+          <option value="Cundinamarca">Cundinamarca</option>
+        </select>
+      </label>
+      <label>
+        Ciudad
+        <select id="orderInfoCity" required>
+          <option value="Fusagasugá">Fusagasugá</option>
+          <option value="Tocaima">Tocaima</option>
+        </select>
       </label>
       <button type="submit" class="btn-primary-block">Guardar y continuar</button>
     </form>

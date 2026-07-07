@@ -1,7 +1,7 @@
 const WHATSAPP_NUMBER = "573008079369"; // +57 300 807 9369, formato internacional sin '+' ni espacios
 
 const PRODUCTS = [
-  { id: "camote", name: "Camote", unit: "por libra", price: 1900, photo: "assets/products/camote.jpg", category: "hortalizas" },
+  { id: "papa", name: "Papa", unit: "por libra", price: 1900, photo: "assets/products/camote.jpg", category: "hortalizas" },
   { id: "tomate", name: "Tomate", unit: "por libra", price: 2200, photo: "assets/products/tomate.jpg", category: "hortalizas" },
   { id: "cebolla", name: "Cebolla", unit: "por libra", price: 2000, photo: "assets/products/cebolla.jpg", category: "hortalizas" },
   { id: "zanahoria", name: "Zanahoria", unit: "por libra", price: 1700, photo: "assets/products/zanahoria.jpg", category: "hortalizas" },

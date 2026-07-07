@@ -23,19 +23,19 @@ frescos-market/
 
 ## Qué hace
 
-- Catálogo de hortalizas (camote, tomate, cebolla, zanahoria, pimentón, cilantro) y frutas (aguacate, manzana, banano, naranja, mango, fresa), definido como array en `script.js` (`PRODUCTS`), con foto real por producto.
+- Catálogo de hortalizas (papa, tomate, cebolla, zanahoria, pimentón, cilantro) y frutas (aguacate, manzana, banano, naranja, mango, fresa), definido como array en `script.js` (`PRODUCTS`), con foto real por producto.
 - Cada producto tiene selector de cantidad (+/-) y botón "Agregar" que suma al carrito.
 - El carrito vive en `localStorage` (`fm-cart`) para no perderse si se recarga la página.
 - El botón "Enviar pedido por WhatsApp" arma un mensaje de texto con el detalle del pedido y el total, y abre `https://wa.me/<numero>?text=...` con todo prellenado.
 - Número de WhatsApp configurado en la constante `WHATSAPP_NUMBER` al inicio de `script.js` — cambiarlo ahí si el número de pedidos cambia.
 - Paleta índigo/cobalt + acento terracota (evitando a propósito el verde-orgánico genérico), tipografía Switzer (Fontshare). Detalle completo en `DESIGN.md`.
 
-## Nota sobre "Camote" (antes "Papa")
+## Nota sobre la foto de "Papa"
 
-Mixkit no tiene ningún video de papa blanca/criolla — solo camote/batata (`farmers-hands-handling-sweet-potatoes...-48127`). En vez de mostrar una foto de camote con la etiqueta "Papa" (inexacto), se renombró el producto a "Camote". Si se consigue una foto real de papa, swap directo: reemplazar `assets/products/camote.jpg` y el `id`/`name` en `PRODUCTS` (`script.js`).
+Mixkit no tiene ningún video de papa blanca/criolla — solo camote/batata (`farmers-hands-handling-sweet-potatoes...-48127`). Por decisión explícita, el producto se llama "Papa" aunque la foto (`assets/products/camote.jpg`) sea de camote — se prefirió el nombre correcto del producto que se vende sobre la coincidencia exacta de la imagen. Si se consigue una foto real de papa, swap directo: reemplazar `assets/products/camote.jpg`.
 
 ## Pendiente / ideas a futuro
 
-- Conseguir foto real de papa blanca/criolla (Mixkit no la tiene) para reemplazar "Camote" si se quiere ese producto específico.
+- Conseguir foto real de papa blanca/criolla (Mixkit no la tiene) para reemplazar la foto de camote usada actualmente.
 - Si se necesita inventario en tiempo real, historial de pedidos o pago en línea, eso va en un backend aparte (Render/Railway/Fly.io) — este repo es solo el front.
 - Deploy: mismo patrón que NIDO, sitio estático en Netlify conectado a este repo, sin build command.

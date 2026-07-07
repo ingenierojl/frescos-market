@@ -426,14 +426,20 @@ async function loadCustomerMessages() {
   const orderId = localStorage.getItem("fm-last-order-id");
   if (!orderId) return;
 
-  const { data } = await supabaseClient.auth.getSession();
-  const token = data.session ? data.session.access_token : null;
+  try {
+    const { data } = await supabaseClient.auth.getSession();
+    const token = data.session ? data.session.access_token : null;
 
-  const res = await fetch(`${API_BASE_URL}/orders/${orderId}/messages`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-  if (!res.ok) return;
-  renderCustomerMessages(await res.json());
+    const res = await fetch(`${API_BASE_URL}/orders/${orderId}/messages`, {
+      cache: "no-store",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    console.log("[chat] poll", new Date().toLocaleTimeString(), "status:", res.status);
+    if (!res.ok) return;
+    renderCustomerMessages(await res.json());
+  } catch (e) {
+    console.error("[chat] fallo al consultar mensajes", e);
+  }
 }
 
 function setupCustomerChat() {

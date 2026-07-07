@@ -446,21 +446,32 @@ async function loadCustomerMessages() {
    navegadores moviles (y hasta de escritorio) a ~60s, dando la sensacion
    de que "no llega nada solo". Un canal realtime no sufre ese problema. */
 async function subscribeToOrderMessages(orderId) {
-  if (customerChatChannel) supabaseClient.removeChannel(customerChatChannel);
+  console.log("[chat] subscribeToOrderMessages() llamada para orden", orderId);
+  try {
+    if (customerChatChannel) supabaseClient.removeChannel(customerChatChannel);
 
-  // Sin esto, el canal de Realtime no sabe quien sos: las policies de RLS
-  // (dueño del pedido o equipo) lo bloquean todo en silencio.
-  const { data } = await supabaseClient.auth.getSession();
-  supabaseClient.realtime.setAuth(data.session ? data.session.access_token : null);
+    // Sin esto, el canal de Realtime no sabe quien sos: las policies de RLS
+    // (dueño del pedido o equipo) lo bloquean todo en silencio.
+    const { data } = await supabaseClient.auth.getSession();
+    console.log("[chat] sesion para realtime:", data.session ? "hay token" : "SIN token");
+    supabaseClient.realtime.setAuth(data.session ? data.session.access_token : null);
 
-  customerChatChannel = supabaseClient
-    .channel(`order-messages-${orderId}`)
-    .on(
-      "postgres_changes",
-      { event: "INSERT", schema: "public", table: "order_messages", filter: `order_id=eq.${orderId}` },
-      () => loadCustomerMessages()
-    )
-    .subscribe((status) => console.log("[chat] realtime status:", status));
+    customerChatChannel = supabaseClient
+      .channel(`order-messages-${orderId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "order_messages", filter: `order_id=eq.${orderId}` },
+        (payload) => {
+          console.log("[chat] nuevo mensaje recibido por realtime:", payload);
+          loadCustomerMessages();
+        }
+      )
+      .subscribe((status, err) => {
+        console.log("[chat] realtime status:", status, err || "");
+      });
+  } catch (e) {
+    console.error("[chat] error en subscribeToOrderMessages:", e);
+  }
 }
 
 function setupCustomerChat() {

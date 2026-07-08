@@ -376,7 +376,7 @@ function openProductModal(product) {
   document.getElementById("productSlug").value = product ? product.slug : "";
   document.getElementById("productSlug").disabled = !!product; // el slug no se cambia al editar
   document.getElementById("productName").value = product ? product.name : "";
-  document.getElementById("productUnit").value = product ? product.unit : "";
+  document.getElementById("productUnit").value = product ? product.unit : "por libra";
   document.getElementById("productPrice").value = product ? product.price : "";
   document.getElementById("productCategory").value = product ? product.category : "hortalizas";
   document.getElementById("productPhotoUrl").value = product ? product.photo_url : "";

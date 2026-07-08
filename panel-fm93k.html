@@ -76,8 +76,15 @@
         <input type="text" id="productName" required>
       </label>
       <label>
-        Unidad (ej: "por libra", "por unidad", "atado")
-        <input type="text" id="productUnit" required>
+        Unidad
+        <select id="productUnit">
+          <option value="por libra">Por libra</option>
+          <option value="por kilo">Por kilo</option>
+          <option value="por unidad">Por unidad</option>
+          <option value="atado">Atado</option>
+          <option value="bandeja">Bandeja</option>
+          <option value="canasta">Canasta</option>
+        </select>
       </label>
       <label>
         Precio (COP)
@@ -92,7 +99,7 @@
       </label>
       <label>
         Foto (o tómala directo con la cámara del celular)
-        <input type="file" id="productPhoto" accept="image/*" capture="environment">
+        <input type="file" id="productPhoto" accept="image/*">
         <input type="hidden" id="productPhotoUrl">
       </label>
       <img id="productPhotoPreview" class="product-photo-preview" hidden alt="Vista previa">

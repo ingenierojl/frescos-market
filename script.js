@@ -623,6 +623,9 @@ function startCustomerChatBackground() {
 }
 
 function setupCustomerChat() {
+  // siempre empieza cerrado -- solo se despliega si el usuario toca el icono
+  document.getElementById("customerChatPanel").hidden = true;
+
   const orderId = localStorage.getItem("fm-last-order-id");
   if (orderId) {
     showChatWidget();

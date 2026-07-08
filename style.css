@@ -133,6 +133,19 @@ a { color: inherit; text-decoration: none; }
 }
 .btn-logout:hover { color: var(--accent); }
 
+.btn-my-orders {
+  border: none;
+  background: transparent;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+.btn-my-orders:hover { color: var(--primary-ink); }
+
 @media (max-width: 780px) {
   .user-name { display: none; }
 }
@@ -783,6 +796,28 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid oklch(0.18 0.02 256 / 0.18);
   background: var(--bg);
 }
+
+.my-orders-modal {
+  max-width: 480px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.order-status-badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 999px;
+  width: fit-content;
+}
+.order-status-badge.status-pending { background: oklch(0.48 0.02 256 / 0.12); color: var(--muted); }
+.order-status-badge.status-confirmed { background: oklch(0.42 0.16 256 / 0.14); color: var(--primary); }
+.order-status-badge.status-delivered { background: oklch(0.60 0.15 145 / 0.14); color: oklch(0.45 0.14 145); }
+.order-status-badge.status-cancelled { background: oklch(0.45 0.17 55 / 0.14); color: var(--accent); }
+
+.settings-hint { font-size: 13px; color: var(--muted); margin: -6px 0 4px; }
+.settings-saved { color: oklch(0.45 0.14 145); font-weight: 600; font-size: 14px; }
 
 /* Tabs del panel de admin */
 .admin-tabs {

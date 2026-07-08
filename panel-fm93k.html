@@ -36,6 +36,7 @@
   <nav class="admin-tabs" id="adminTabs" hidden>
     <button class="admin-tab active" data-tab="orders">Pedidos</button>
     <button class="admin-tab" data-tab="products">Productos</button>
+    <button class="admin-tab" data-tab="settings" id="settingsTabBtn" hidden>Configuración</button>
   </nav>
 
   <section id="ordersTab" class="admin-tab-panel">
@@ -45,6 +46,18 @@
   <section id="productsTab" class="admin-tab-panel" hidden>
     <button class="btn-outline" id="addProductBtn">+ Agregar producto</button>
     <div id="productsList" class="products-admin-list"></div>
+  </section>
+
+  <section id="settingsTab" class="admin-tab-panel" hidden>
+    <form id="settingsForm" class="order-info-form">
+      <label>
+        Chat de Telegram para avisos de pedido nuevo
+        <input type="text" id="telegramChatId" placeholder="Ej: 123456789">
+      </label>
+      <p class="settings-hint">Es el chat_id que te da el bot, no tu número de teléfono. Déjalo vacío para no recibir avisos.</p>
+      <button type="submit" class="btn-primary-block">Guardar</button>
+    </form>
+    <p id="settingsSaved" class="settings-saved" hidden>Guardado ✓</p>
   </section>
 </main>
 

@@ -49,8 +49,12 @@ function setupTabs() {
       const target = tab.dataset.tab;
       document.getElementById("ordersTab").hidden = target !== "orders";
       document.getElementById("productsTab").hidden = target !== "products";
+      document.getElementById("settingsTab").hidden = target !== "settings";
       if (target === "products" && document.getElementById("productsList").dataset.loaded !== "true") {
         loadProducts();
+      }
+      if (target === "settings") {
+        loadSettings();
       }
     });
   });
@@ -327,12 +331,41 @@ async function loadProducts() {
     // el despachador no administra productos: se oculta la pestaña, no es un error
     isAdmin = false;
     document.querySelector('.admin-tab[data-tab="products"]').hidden = true;
+    document.getElementById("settingsTabBtn").hidden = true;
     return;
   }
   if (!res.ok) return;
   isAdmin = true; // solo el admin puede listar productos, sirve para mostrar "Eliminar" en pedidos
+  document.getElementById("settingsTabBtn").hidden = false;
   const products = await res.json();
   renderProducts(products);
+}
+
+async function loadSettings() {
+  const res = await authedFetch("/admin/settings");
+  if (!res.ok) return;
+  const data = await res.json();
+  document.getElementById("telegramChatId").value = data.telegram_chat_id || "";
+}
+
+function setupSettingsForm() {
+  document.getElementById("settingsForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const value = document.getElementById("telegramChatId").value.trim();
+    const res = await authedFetch("/admin/settings", {
+      method: "PUT",
+      body: JSON.stringify({ telegram_chat_id: value || null }),
+    });
+    if (!res.ok) {
+      alert("No se pudo guardar la configuración.");
+      return;
+    }
+    const saved = document.getElementById("settingsSaved");
+    saved.hidden = false;
+    setTimeout(() => {
+      saved.hidden = true;
+    }, 2000);
+  });
 }
 
 function openProductModal(product) {
@@ -401,6 +434,7 @@ async function init() {
   await setupAuth();
   setupTabs();
   setupProductForm();
+  setupSettingsForm();
   await loadProducts(); // llena productsById antes de mostrar pedidos, para ver nombres en vez de #id
   await loadOrders();
 

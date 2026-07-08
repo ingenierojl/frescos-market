@@ -2,6 +2,13 @@ const WHATSAPP_NUMBER = "573008079369"; // +57 300 807 9369, contacto general (n
 const API_BASE_URL = "https://frescos-market-api.onrender.com/api/v1";
 // supabaseClient, renderAuthUI y setupAuth vienen de auth.js (compartido con panel-fm93k.html)
 
+const STATUS_LABELS = {
+  pending: "Pendiente",
+  confirmed: "Confirmado",
+  delivered: "Entregado",
+  cancelled: "Cancelado",
+};
+
 const PRODUCTS = [
   { id: "papa", name: "Papa", unit: "por libra", price: 1900, photo: "assets/products/camote.jpg", category: "hortalizas" },
   { id: "tomate", name: "Tomate", unit: "por libra", price: 2200, photo: "assets/products/tomate.jpg", category: "hortalizas" },
@@ -590,6 +597,104 @@ function setupCustomerChat() {
   });
 }
 
+/* Mis pedidos (cliente) */
+let myOrdersProductsById = null; // cache: id numerico -> producto (viene del catalogo publico, no de PRODUCTS que usa slug)
+
+async function ensureMyOrdersProductsById() {
+  if (myOrdersProductsById) return myOrdersProductsById;
+  myOrdersProductsById = {};
+  try {
+    const res = await fetch(`${API_BASE_URL}/products`);
+    if (res.ok) {
+      const products = await res.json();
+      products.forEach((p) => {
+        myOrdersProductsById[p.id] = p;
+      });
+    }
+  } catch (e) {
+    // si falla, se muestran los items con su id como respaldo
+  }
+  return myOrdersProductsById;
+}
+
+function renderMyOrders(orders) {
+  const list = document.getElementById("myOrdersList");
+  if (orders.length === 0) {
+    list.innerHTML = "<p>Todavía no has hecho ningún pedido.</p>";
+    return;
+  }
+
+  list.innerHTML = orders
+    .map((order) => {
+      const itemsHtml = order.items
+        .map((item) => {
+          const product = myOrdersProductsById[item.product_id];
+          const label = product ? product.name : `Producto #${item.product_id}`;
+          return `<li>${label} × ${item.quantity} — ${currency.format(item.subtotal)}</li>`;
+        })
+        .join("");
+      const date = new Date(order.created_at).toLocaleString("es-CO");
+      const statusLabel = STATUS_LABELS[order.status] || order.status;
+
+      return `
+        <div class="order-card">
+          <div class="order-card-head">
+            <div>
+              <span class="order-status-badge status-${order.status}">${statusLabel}</span>
+              <div class="order-date">${date}</div>
+            </div>
+            <div class="order-total">${currency.format(order.total)}</div>
+          </div>
+          <div class="order-address">${order.delivery_address}, ${order.city}</div>
+          <ul class="order-items">${itemsHtml}</ul>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+async function loadMyOrders() {
+  const list = document.getElementById("myOrdersList");
+  list.innerHTML = "<p>Cargando…</p>";
+
+  const { data } = await supabaseClient.auth.getSession();
+  const token = data.session ? data.session.access_token : null;
+  if (!token) {
+    list.innerHTML = "<p>Inicia sesión para ver tus pedidos.</p>";
+    return;
+  }
+
+  try {
+    await ensureMyOrdersProductsById();
+    const res = await fetch(`${API_BASE_URL}/orders/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("fetch failed");
+    const orders = await res.json();
+    renderMyOrders(orders);
+  } catch (e) {
+    list.innerHTML = "<p>No se pudieron cargar tus pedidos. Intenta de nuevo.</p>";
+  }
+}
+
+function openMyOrdersModal() {
+  document.getElementById("myOrdersModal").classList.add("open");
+  loadMyOrders();
+}
+
+function closeMyOrdersModal() {
+  document.getElementById("myOrdersModal").classList.remove("open");
+}
+
+function setupMyOrders() {
+  document.getElementById("myOrdersClose").addEventListener("click", closeMyOrdersModal);
+  document.getElementById("myOrdersModal").addEventListener("click", (e) => {
+    if (e.target === document.getElementById("myOrdersModal")) closeMyOrdersModal();
+  });
+}
+
+window.openMyOrdersModal = openMyOrdersModal;
+
 function init() {
   loadCart();
   renderGrid("grid-hortalizas", "hortalizas");
@@ -599,6 +704,7 @@ function init() {
   renderCart();
   setupAuth();
   setupCustomerChat();
+  setupMyOrders();
   setupHeroRotation();
   setupSectionVideos();
   setupAutoplayUnlock();

@@ -77,11 +77,15 @@ function renderAuthUI(session) {
       <div class="user-chip">
         ${avatar ? `<img class="user-avatar" src="${avatar}" alt="">` : ""}
         <span class="user-name">${name}</span>
+        <button class="btn-my-orders" id="myOrdersBtn">Mis pedidos</button>
         <button class="btn-logout" id="logoutBtn">Salir</button>
       </div>
     `;
     document.getElementById("logoutBtn").addEventListener("click", async () => {
       await supabaseClient.auth.signOut();
+    });
+    document.getElementById("myOrdersBtn").addEventListener("click", () => {
+      if (window.openMyOrdersModal) window.openMyOrdersModal();
     });
   } else {
     authArea.innerHTML = `<button class="btn-login" id="loginBtn">Iniciar sesión</button>`;

@@ -1,4 +1,4 @@
-const WHATSAPP_NUMBER = "573008079369"; // +57 300 807 9369, contacto general (no para hacer el pedido)
+let WHATSAPP_NUMBER = "573008079369"; // valor de respaldo si /settings no responde; se reemplaza con loadWhatsappNumber()
 const API_BASE_URL = "https://frescos-market-api.onrender.com/api/v1";
 // supabaseClient, renderAuthUI y setupAuth vienen de auth.js (compartido con panel-fm93k.html)
 
@@ -26,6 +26,34 @@ async function loadProducts() {
     }));
   } catch (e) {
     PRODUCTS = [];
+  }
+}
+
+async function loadWhatsappNumber() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/settings`);
+    if (!res.ok) throw new Error("fetch failed");
+    const data = await res.json();
+    if (data.whatsapp_number) WHATSAPP_NUMBER = data.whatsapp_number;
+  } catch (e) {
+    // se queda con el valor de respaldo
+  }
+}
+
+async function loadDeliveryOptions() {
+  const departmentSelect = document.getElementById("orderInfoDepartment");
+  const citySelect = document.getElementById("orderInfoCity");
+  try {
+    const [deptRes, cityRes] = await Promise.all([
+      fetch(`${API_BASE_URL}/catalog-options?type=department`),
+      fetch(`${API_BASE_URL}/catalog-options?type=city`),
+    ]);
+    const departments = deptRes.ok ? await deptRes.json() : [];
+    const cities = cityRes.ok ? await cityRes.json() : [];
+    departmentSelect.innerHTML = departments.map((d) => `<option value="${d.value}">${d.value}</option>`).join("");
+    citySelect.innerHTML = cities.map((c) => `<option value="${c.value}">${c.value}</option>`).join("");
+  } catch (e) {
+    // si falla, los selects quedan vacios; el required del form evita enviar sin elegir
   }
 }
 
@@ -717,7 +745,7 @@ async function init() {
   setupAutoplayUnlock();
   setupScrollReveal();
 
-  await loadProducts();
+  await Promise.all([loadProducts(), loadWhatsappNumber(), loadDeliveryOptions()]);
   renderGrid("grid-hortalizas", "hortalizas");
   renderGrid("grid-frutas", "frutas");
   setupProductCards();

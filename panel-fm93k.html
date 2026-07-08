@@ -55,9 +55,44 @@
         <input type="text" id="telegramChatId" placeholder="Ej: 123456789">
       </label>
       <p class="settings-hint">Es el chat_id que te da el bot, no tu número de teléfono. Déjalo vacío para no recibir avisos.</p>
+      <label>
+        Número de WhatsApp de contacto
+        <input type="tel" id="whatsappNumber" placeholder="Ej: 573001234567">
+      </label>
+      <p class="settings-hint">Formato internacional sin "+", ej: 57 (Colombia) + número. Es el que se usa en el botón de WhatsApp del pie de página.</p>
       <button type="submit" class="btn-primary-block">Guardar</button>
     </form>
     <p id="settingsSaved" class="settings-saved" hidden>Guardado ✓</p>
+
+    <div class="catalog-options-manager">
+      <h3>Unidades</h3>
+      <div class="catalog-options-list" data-type="unit"></div>
+      <form class="catalog-option-add-form" data-type="unit">
+        <input type="text" placeholder="Nueva unidad, ej: por gramo" required>
+        <button type="submit" class="btn-small">Agregar</button>
+      </form>
+
+      <h3>Categorías</h3>
+      <div class="catalog-options-list" data-type="category"></div>
+      <form class="catalog-option-add-form" data-type="category">
+        <input type="text" placeholder="Nueva categoría, ej: lácteos" required>
+        <button type="submit" class="btn-small">Agregar</button>
+      </form>
+
+      <h3>Departamentos</h3>
+      <div class="catalog-options-list" data-type="department"></div>
+      <form class="catalog-option-add-form" data-type="department">
+        <input type="text" placeholder="Nuevo departamento" required>
+        <button type="submit" class="btn-small">Agregar</button>
+      </form>
+
+      <h3>Ciudades</h3>
+      <div class="catalog-options-list" data-type="city"></div>
+      <form class="catalog-option-add-form" data-type="city">
+        <input type="text" placeholder="Nueva ciudad" required>
+        <button type="submit" class="btn-small">Agregar</button>
+      </form>
+    </div>
   </section>
 </main>
 
@@ -77,14 +112,7 @@
       </label>
       <label>
         Unidad
-        <select id="productUnit">
-          <option value="por libra">Por libra</option>
-          <option value="por kilo">Por kilo</option>
-          <option value="por unidad">Por unidad</option>
-          <option value="atado">Atado</option>
-          <option value="bandeja">Bandeja</option>
-          <option value="canasta">Canasta</option>
-        </select>
+        <select id="productUnit"></select>
       </label>
       <label>
         Precio (COP)
@@ -92,10 +120,7 @@
       </label>
       <label>
         Categoría
-        <select id="productCategory">
-          <option value="hortalizas">Hortalizas</option>
-          <option value="frutas">Frutas</option>
-        </select>
+        <select id="productCategory"></select>
       </label>
       <label>Foto</label>
       <div class="photo-source-row">

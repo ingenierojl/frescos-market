@@ -832,6 +832,61 @@ a { color: inherit; text-decoration: none; }
 .settings-hint { font-size: 13px; color: var(--muted); margin: -6px 0 4px; }
 .settings-saved { color: oklch(0.45 0.14 145); font-weight: 600; font-size: 14px; }
 
+.catalog-options-manager { margin-top: 32px; }
+.catalog-options-manager h3 {
+  font-size: 15px;
+  margin: 22px 0 10px;
+}
+.catalog-options-manager h3:first-child { margin-top: 0; }
+
+.catalog-options-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+  min-height: 30px;
+}
+
+.catalog-option-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 6px 8px 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.catalog-option-remove {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+}
+.catalog-option-remove:hover { color: var(--accent); }
+
+.catalog-option-add-form {
+  display: flex;
+  gap: 8px;
+}
+.catalog-option-add-form input {
+  flex: 1;
+  font-family: inherit;
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid oklch(0.18 0.02 256 / 0.18);
+  background: var(--bg);
+}
+.catalog-option-add-form input:focus { outline: none; border-color: var(--primary); }
+
+#productUnit, #productCategory { text-transform: capitalize; }
+
 /* Tabs del panel de admin */
 .admin-tabs {
   display: flex;

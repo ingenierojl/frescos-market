@@ -346,15 +346,18 @@ async function loadSettings() {
   if (!res.ok) return;
   const data = await res.json();
   document.getElementById("telegramChatId").value = data.telegram_chat_id || "";
+  document.getElementById("whatsappNumber").value = data.whatsapp_number || "";
+  loadCatalogOptionsManager();
 }
 
 function setupSettingsForm() {
   document.getElementById("settingsForm").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const value = document.getElementById("telegramChatId").value.trim();
+    const telegramChatId = document.getElementById("telegramChatId").value.trim();
+    const whatsappNumber = document.getElementById("whatsappNumber").value.trim();
     const res = await authedFetch("/admin/settings", {
       method: "PUT",
-      body: JSON.stringify({ telegram_chat_id: value || null }),
+      body: JSON.stringify({ telegram_chat_id: telegramChatId || null, whatsapp_number: whatsappNumber || null }),
     });
     if (!res.ok) {
       alert("No se pudo guardar la configuración.");
@@ -365,6 +368,80 @@ function setupSettingsForm() {
     setTimeout(() => {
       saved.hidden = true;
     }, 2000);
+  });
+  setupCatalogOptionsForms();
+}
+
+const CATALOG_OPTION_TYPES = ["unit", "category", "department", "city"];
+
+async function loadProductFormOptions() {
+  const res = await fetch(`${API_BASE_URL}/catalog-options`);
+  if (!res.ok) return;
+  const all = await res.json();
+  const units = all.filter((o) => o.type === "unit");
+  const categories = all.filter((o) => o.type === "category");
+  document.getElementById("productUnit").innerHTML = units
+    .map((o) => `<option value="${o.value}">${o.value}</option>`)
+    .join("");
+  document.getElementById("productCategory").innerHTML = categories
+    .map((o) => `<option value="${o.value}">${o.value}</option>`)
+    .join("");
+}
+
+async function loadCatalogOptionsManager() {
+  const res = await fetch(`${API_BASE_URL}/catalog-options`);
+  if (!res.ok) return;
+  const all = await res.json();
+
+  CATALOG_OPTION_TYPES.forEach((type) => {
+    const list = document.querySelector(`.catalog-options-list[data-type="${type}"]`);
+    const items = all.filter((o) => o.type === type);
+    list.innerHTML = items
+      .map(
+        (o) => `
+        <span class="catalog-option-chip">
+          ${o.value}
+          <button type="button" class="catalog-option-remove" data-id="${o.id}" aria-label="Quitar">✕</button>
+        </span>
+      `
+      )
+      .join("");
+  });
+
+  document.querySelectorAll(".catalog-option-remove").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const res = await authedFetch(`/admin/catalog-options/${btn.dataset.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        alert("No se pudo quitar la opción.");
+        return;
+      }
+      loadCatalogOptionsManager();
+      loadProductFormOptions();
+    });
+  });
+}
+
+function setupCatalogOptionsForms() {
+  document.querySelectorAll(".catalog-option-add-form").forEach((form) => {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const input = form.querySelector("input");
+      const value = input.value.trim();
+      if (!value) return;
+
+      const res = await authedFetch("/admin/catalog-options", {
+        method: "POST",
+        body: JSON.stringify({ type: form.dataset.type, value }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        alert(body.detail || "No se pudo agregar.");
+        return;
+      }
+      input.value = "";
+      loadCatalogOptionsManager();
+      loadProductFormOptions();
+    });
   });
 }
 
@@ -509,6 +586,7 @@ async function init() {
   setupTabs();
   setupProductForm();
   setupSettingsForm();
+  loadProductFormOptions(); // opciones de Unidad/Categoria para el modal de productos
   await loadProducts(); // llena productsById antes de mostrar pedidos, para ver nombres en vez de #id
   await loadOrders();
 

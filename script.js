@@ -1,5 +1,12 @@
 let WHATSAPP_NUMBER = "573008079369"; // valor de respaldo si /settings no responde; se reemplaza con loadWhatsappNumber()
 const API_BASE_URL = "https://frescos-market-api.onrender.com/api/v1";
+
+function formatWhatsappDisplay(number) {
+  // Formato internacional sin "+": codigo de pais (2 digitos) + 10 digitos locales
+  const match = number.match(/^(\d{2})(\d{3})(\d{3})(\d{4})$/);
+  if (match) return `+${match[1]} ${match[2]} ${match[3]} ${match[4]}`;
+  return `+${number}`;
+}
 // supabaseClient, renderAuthUI y setupAuth vienen de auth.js (compartido con panel-fm93k.html)
 
 const STATUS_LABELS = {
@@ -421,7 +428,9 @@ function setupCartControls() {
     placeOrder();
   });
 
-  document.getElementById("footerWhatsapp").href = `https://wa.me/${WHATSAPP_NUMBER}`;
+  const footerWhatsapp = document.getElementById("footerWhatsapp");
+  footerWhatsapp.href = `https://wa.me/${WHATSAPP_NUMBER}`;
+  footerWhatsapp.textContent = formatWhatsappDisplay(WHATSAPP_NUMBER);
 }
 
 /* Hero: crossfade entre los 2 videos cada 9s, como en NIDO */

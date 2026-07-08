@@ -97,11 +97,14 @@
           <option value="frutas">Frutas</option>
         </select>
       </label>
-      <label>
-        Foto (o tómala directo con la cámara del celular)
-        <input type="file" id="productPhoto" accept="image/*">
-        <input type="hidden" id="productPhotoUrl">
-      </label>
+      <label>Foto</label>
+      <div class="photo-source-row">
+        <button type="button" class="btn-outline" id="productPhotoCameraBtn">📷 Tomar foto</button>
+        <button type="button" class="btn-outline" id="productPhotoGalleryBtn">🖼️ Elegir de galería</button>
+      </div>
+      <input type="file" id="productPhotoCamera" accept="image/*" capture="environment" hidden>
+      <input type="file" id="productPhotoGallery" accept="image/*" hidden>
+      <input type="hidden" id="productPhotoUrl">
       <img id="productPhotoPreview" class="product-photo-preview" hidden alt="Vista previa">
       <p id="productPhotoStatus" class="settings-hint" hidden></p>
       <label>

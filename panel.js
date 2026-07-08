@@ -391,10 +391,12 @@ function openProductModal(product) {
     preview.hidden = true;
   }
   document.getElementById("productPhotoStatus").hidden = true;
+  selectedProductPhotoFile = null;
 
   document.getElementById("productModal").classList.add("open");
 }
 
+let selectedProductPhotoFile = null; // viene de la camara o de la galeria, cualquiera de los 2 botones
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024; // igual al limite del bucket en Supabase Storage
 
 async function uploadProductPhoto(file) {
@@ -417,7 +419,14 @@ function setupProductForm() {
     if (e.target.id === "productModal") closeProductModal();
   });
 
-  document.getElementById("productPhoto").addEventListener("change", (e) => {
+  document.getElementById("productPhotoCameraBtn").addEventListener("click", () => {
+    document.getElementById("productPhotoCamera").click();
+  });
+  document.getElementById("productPhotoGalleryBtn").addEventListener("click", () => {
+    document.getElementById("productPhotoGallery").click();
+  });
+
+  const handlePhotoChosen = (e) => {
     const file = e.target.files[0];
     const preview = document.getElementById("productPhotoPreview");
     if (!file) return;
@@ -428,15 +437,18 @@ function setupProductForm() {
       return;
     }
 
+    selectedProductPhotoFile = file;
     preview.src = URL.createObjectURL(file);
     preview.hidden = false;
-  });
+  };
+  document.getElementById("productPhotoCamera").addEventListener("change", handlePhotoChosen);
+  document.getElementById("productPhotoGallery").addEventListener("change", handlePhotoChosen);
 
   document.getElementById("productForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const id = document.getElementById("productId").value;
     const stockValue = document.getElementById("productStock").value;
-    const file = document.getElementById("productPhoto").files[0];
+    const file = selectedProductPhotoFile;
     let photoUrl = document.getElementById("productPhotoUrl").value;
 
     if (!file && !photoUrl) {

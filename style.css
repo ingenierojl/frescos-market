@@ -894,6 +894,14 @@ a { color: inherit; text-decoration: none; }
   flex-shrink: 0;
 }
 
+.photo-source-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: -10px 0 4px;
+}
+.photo-source-row .btn-outline { margin-bottom: 0; flex: 1; }
+
 .product-photo-preview {
   width: 120px;
   height: 120px;

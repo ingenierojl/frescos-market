@@ -63,6 +63,48 @@ const currency = new Intl.NumberFormat("es-CO", {
   maximumFractionDigits: 0,
 });
 
+// Estas 2 ya tienen su seccion curada en el HTML (video + texto propios). Cualquier
+// categoria nueva que se agregue desde el panel se muestra en una seccion generica.
+const CURATED_CATEGORY_SECTIONS = ["hortalizas", "frutas"];
+
+function ensureCategorySection(category) {
+  if (document.getElementById(`grid-${category}`)) return;
+
+  const label = category.charAt(0).toUpperCase() + category.slice(1);
+
+  // sin la clase io-reveal: esta seccion se crea despues de setupScrollReveal(),
+  // que solo observa lo que ya existe en el DOM al momento de llamarse
+  const header = document.createElement("div");
+  header.className = "category-section-header";
+  header.innerHTML = `<h2>${label}</h2>`;
+
+  const catalogSection = document.createElement("div");
+  catalogSection.className = "catalog-section";
+  catalogSection.innerHTML = `<div class="product-grid" id="grid-${category}"></div>`;
+
+  const anchor = document.getElementById("dynamicCategoriesAnchor");
+  anchor.before(header);
+  anchor.before(catalogSection);
+
+  const comoLink = document.querySelector('.nav-cats a[href="#proceso"]');
+  const link = document.createElement("a");
+  link.href = `#grid-${category}`;
+  link.textContent = label;
+  comoLink.parentElement.insertBefore(link, comoLink);
+}
+
+function renderAllCategories() {
+  const categories = [...new Set(PRODUCTS.map((p) => p.category))];
+  const ordered = [
+    ...CURATED_CATEGORY_SECTIONS.filter((c) => categories.includes(c)),
+    ...categories.filter((c) => !CURATED_CATEGORY_SECTIONS.includes(c)),
+  ];
+  ordered.forEach((category) => {
+    ensureCategorySection(category);
+    renderGrid(`grid-${category}`, category);
+  });
+}
+
 const cart = {}; // { productId: qty }
 
 function loadCart() {
@@ -746,8 +788,7 @@ async function init() {
   setupScrollReveal();
 
   await Promise.all([loadProducts(), loadWhatsappNumber(), loadDeliveryOptions()]);
-  renderGrid("grid-hortalizas", "hortalizas");
-  renderGrid("grid-frutas", "frutas");
+  renderAllCategories();
   setupProductCards();
   setupCartControls();
   renderCart();

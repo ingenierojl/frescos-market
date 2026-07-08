@@ -91,9 +91,12 @@
         </select>
       </label>
       <label>
-        URL de la foto
-        <input type="text" id="productPhoto" required>
+        Foto (o tómala directo con la cámara del celular)
+        <input type="file" id="productPhoto" accept="image/*" capture="environment">
+        <input type="hidden" id="productPhotoUrl">
       </label>
+      <img id="productPhotoPreview" class="product-photo-preview" hidden alt="Vista previa">
+      <p id="productPhotoStatus" class="settings-hint" hidden></p>
       <label>
         Stock (vacío = sin control de stock)
         <input type="number" id="productStock" min="0">

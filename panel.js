@@ -379,10 +379,31 @@ function openProductModal(product) {
   document.getElementById("productUnit").value = product ? product.unit : "";
   document.getElementById("productPrice").value = product ? product.price : "";
   document.getElementById("productCategory").value = product ? product.category : "hortalizas";
-  document.getElementById("productPhoto").value = product ? product.photo_url : "";
+  document.getElementById("productPhotoUrl").value = product ? product.photo_url : "";
   document.getElementById("productStock").value = product && product.stock !== null ? product.stock : "";
   document.getElementById("productActive").checked = product ? product.active : true;
+
+  const preview = document.getElementById("productPhotoPreview");
+  if (product && product.photo_url) {
+    preview.src = product.photo_url;
+    preview.hidden = false;
+  } else {
+    preview.hidden = true;
+  }
+  document.getElementById("productPhotoStatus").hidden = true;
+
   document.getElementById("productModal").classList.add("open");
+}
+
+const MAX_PHOTO_BYTES = 8 * 1024 * 1024; // igual al limite del bucket en Supabase Storage
+
+async function uploadProductPhoto(file) {
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await supabaseClient.storage.from("product-photos").upload(path, file);
+  if (error) throw error;
+  const { data } = supabaseClient.storage.from("product-photos").getPublicUrl(path);
+  return data.publicUrl;
 }
 
 function closeProductModal() {
@@ -396,17 +417,58 @@ function setupProductForm() {
     if (e.target.id === "productModal") closeProductModal();
   });
 
+  document.getElementById("productPhoto").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    const preview = document.getElementById("productPhotoPreview");
+    if (!file) return;
+
+    if (file.size > MAX_PHOTO_BYTES) {
+      alert("La foto pesa demasiado (máximo 8MB). Elige otra o toma una nueva con menor calidad.");
+      e.target.value = "";
+      return;
+    }
+
+    preview.src = URL.createObjectURL(file);
+    preview.hidden = false;
+  });
+
   document.getElementById("productForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const id = document.getElementById("productId").value;
     const stockValue = document.getElementById("productStock").value;
+    const file = document.getElementById("productPhoto").files[0];
+    let photoUrl = document.getElementById("productPhotoUrl").value;
+
+    if (!file && !photoUrl) {
+      alert("Selecciona una foto para el producto.");
+      return;
+    }
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const statusEl = document.getElementById("productPhotoStatus");
+
+    if (file) {
+      submitBtn.disabled = true;
+      statusEl.hidden = false;
+      statusEl.textContent = "Subiendo foto…";
+      try {
+        photoUrl = await uploadProductPhoto(file);
+      } catch (err) {
+        alert("No se pudo subir la foto. Intenta de nuevo.");
+        submitBtn.disabled = false;
+        statusEl.hidden = true;
+        return;
+      }
+      statusEl.hidden = true;
+      submitBtn.disabled = false;
+    }
 
     const payload = {
       name: document.getElementById("productName").value.trim(),
       unit: document.getElementById("productUnit").value.trim(),
       price: parseInt(document.getElementById("productPrice").value, 10),
       category: document.getElementById("productCategory").value,
-      photo_url: document.getElementById("productPhoto").value.trim(),
+      photo_url: photoUrl,
       stock: stockValue === "" ? null : parseInt(stockValue, 10),
       active: document.getElementById("productActive").checked,
     };

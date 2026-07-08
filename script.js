@@ -9,20 +9,25 @@ const STATUS_LABELS = {
   cancelled: "Cancelado",
 };
 
-const PRODUCTS = [
-  { id: "papa", name: "Papa", unit: "por libra", price: 1900, photo: "assets/products/camote.jpg", category: "hortalizas" },
-  { id: "tomate", name: "Tomate", unit: "por libra", price: 2200, photo: "assets/products/tomate.jpg", category: "hortalizas" },
-  { id: "cebolla", name: "Cebolla", unit: "por libra", price: 2000, photo: "assets/products/cebolla.jpg", category: "hortalizas" },
-  { id: "zanahoria", name: "Zanahoria", unit: "por libra", price: 1700, photo: "assets/products/zanahoria.jpg", category: "hortalizas" },
-  { id: "pimenton", name: "Pimentón", unit: "por libra", price: 2600, photo: "assets/products/pimenton.jpg", category: "hortalizas" },
-  { id: "cilantro", name: "Cilantro", unit: "atado", price: 1500, photo: "assets/products/cilantro.jpg", category: "hortalizas" },
-  { id: "aguacate", name: "Aguacate", unit: "por unidad", price: 2500, photo: "assets/products/aguacate.jpg", category: "frutas" },
-  { id: "manzana", name: "Manzana", unit: "por libra", price: 3200, photo: "assets/products/manzana.jpg", category: "frutas" },
-  { id: "banano", name: "Banano", unit: "por libra", price: 1500, photo: "assets/products/banano.jpg", category: "frutas" },
-  { id: "naranja", name: "Naranja", unit: "por libra", price: 1900, photo: "assets/products/naranja.jpg", category: "frutas" },
-  { id: "mango", name: "Mango", unit: "por unidad", price: 2300, photo: "assets/products/mango.jpg", category: "frutas" },
-  { id: "fresa", name: "Fresa", unit: "canasta", price: 5500, photo: "assets/products/fresa.jpg", category: "frutas" },
-];
+let PRODUCTS = []; // se llena desde GET /api/v1/products (catalogo real del CRUD del panel, ya no es una lista fija)
+
+async function loadProducts() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/products`);
+    if (!res.ok) throw new Error("fetch failed");
+    const data = await res.json();
+    PRODUCTS = data.map((p) => ({
+      id: p.slug,
+      name: p.name,
+      unit: p.unit,
+      price: p.price,
+      photo: p.photo_url,
+      category: p.category,
+    }));
+  } catch (e) {
+    PRODUCTS = [];
+  }
+}
 
 const currency = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -48,6 +53,11 @@ function saveCart() {
 function renderGrid(containerId, category) {
   const container = document.getElementById(containerId);
   const items = PRODUCTS.filter((p) => p.category === category);
+
+  if (items.length === 0) {
+    container.innerHTML = '<p class="catalog-empty">No se pudo cargar el catálogo. Intenta recargar la página.</p>';
+    return;
+  }
 
   container.innerHTML = items
     .map(
@@ -695,13 +705,10 @@ function setupMyOrders() {
 
 window.openMyOrdersModal = openMyOrdersModal;
 
-function init() {
+async function init() {
   loadCart();
-  renderGrid("grid-hortalizas", "hortalizas");
-  renderGrid("grid-frutas", "frutas");
-  setupProductCards();
-  setupCartControls();
-  renderCart();
+  document.getElementById("grid-hortalizas").innerHTML = "<p class=\"catalog-loading\">Cargando catálogo…</p>";
+  document.getElementById("grid-frutas").innerHTML = "<p class=\"catalog-loading\">Cargando catálogo…</p>";
   setupAuth();
   setupCustomerChat();
   setupMyOrders();
@@ -709,6 +716,13 @@ function init() {
   setupSectionVideos();
   setupAutoplayUnlock();
   setupScrollReveal();
+
+  await loadProducts();
+  renderGrid("grid-hortalizas", "hortalizas");
+  renderGrid("grid-frutas", "frutas");
+  setupProductCards();
+  setupCartControls();
+  renderCart();
 }
 
 document.addEventListener("DOMContentLoaded", init);

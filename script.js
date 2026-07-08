@@ -784,8 +784,33 @@ function setupMyOrders() {
 
 window.openMyOrdersModal = openMyOrdersModal;
 
+function setupMobileNav() {
+  const toggle = document.getElementById("navToggle");
+  const nav = document.getElementById("navCats");
+
+  toggle.addEventListener("click", () => {
+    const isOpen = nav.classList.toggle("open");
+    toggle.setAttribute("aria-expanded", String(isOpen));
+  });
+
+  // cerrar al elegir una categoria, o al tocar fuera del menu
+  nav.addEventListener("click", (e) => {
+    if (e.target.tagName === "A") {
+      nav.classList.remove("open");
+      toggle.setAttribute("aria-expanded", "false");
+    }
+  });
+  document.addEventListener("click", (e) => {
+    if (nav.classList.contains("open") && !nav.contains(e.target) && !toggle.contains(e.target)) {
+      nav.classList.remove("open");
+      toggle.setAttribute("aria-expanded", "false");
+    }
+  });
+}
+
 async function init() {
   loadCart();
+  setupMobileNav();
   document.getElementById("grid-hortalizas").innerHTML = "<p class=\"catalog-loading\">Cargando catálogo…</p>";
   document.getElementById("grid-frutas").innerHTML = "<p class=\"catalog-loading\">Cargando catálogo…</p>";
   setupAuth();

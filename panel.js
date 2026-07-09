@@ -348,6 +348,7 @@ async function loadSettings() {
   document.getElementById("telegramChatId").value = data.telegram_chat_id || "";
   document.getElementById("whatsappNumber").value = data.whatsapp_number || "";
   loadCatalogOptionsManager();
+  loadPaymentOptionsManager();
 }
 
 function setupSettingsForm() {
@@ -370,6 +371,7 @@ function setupSettingsForm() {
     }, 2000);
   });
   setupCatalogOptionsForms();
+  setupPaymentOptionAddForm();
 }
 
 const CATALOG_OPTION_TYPES = ["unit", "category", "department", "city"];
@@ -442,6 +444,72 @@ function setupCatalogOptionsForms() {
       loadCatalogOptionsManager();
       loadProductFormOptions();
     });
+  });
+}
+
+async function loadPaymentOptionsManager() {
+  const res = await fetch(`${API_BASE_URL}/payment-options`);
+  if (!res.ok) return;
+  const options = await res.json();
+
+  const list = document.getElementById("paymentOptionsList");
+  list.innerHTML = options
+    .map(
+      (o) => `
+      <div class="payment-option-chip">
+        ${o.qr_image_url ? `<img class="payment-option-chip-qr" src="${o.qr_image_url}" alt="">` : ""}
+        <div>
+          <strong>${o.label}</strong>
+          <div>${o.phone_or_account}</div>
+        </div>
+        <button type="button" class="catalog-option-remove" data-id="${o.id}" aria-label="Quitar">✕</button>
+      </div>
+    `
+    )
+    .join("");
+
+  list.querySelectorAll(".catalog-option-remove").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const res = await authedFetch(`/admin/payment-options/${btn.dataset.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        alert("No se pudo quitar el método de pago.");
+        return;
+      }
+      loadPaymentOptionsManager();
+    });
+  });
+}
+
+function setupPaymentOptionAddForm() {
+  document.getElementById("paymentOptionAddForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const label = document.getElementById("newPaymentLabel").value.trim();
+    const account = document.getElementById("newPaymentAccount").value.trim();
+    const qrFile = document.getElementById("newPaymentQr").files[0];
+    if (!label || !account) return;
+
+    let qrImageUrl = null;
+    if (qrFile) {
+      try {
+        qrImageUrl = await uploadProductPhoto(qrFile);
+      } catch (err) {
+        alert("No se pudo subir el QR. Intenta de nuevo.");
+        return;
+      }
+    }
+
+    const res = await authedFetch("/admin/payment-options", {
+      method: "POST",
+      body: JSON.stringify({ label, phone_or_account: account, qr_image_url: qrImageUrl }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      alert(body.detail || "No se pudo agregar el método de pago.");
+      return;
+    }
+
+    e.target.reset();
+    loadPaymentOptionsManager();
   });
 }
 

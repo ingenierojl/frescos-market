@@ -64,6 +64,45 @@ async function loadDeliveryOptions() {
   }
 }
 
+let PAYMENT_OPTIONS = []; // destinos de transferencia (Nequi, Daviplata...), desde GET /payment-options
+
+async function loadPaymentOptions() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/payment-options`);
+    if (!res.ok) throw new Error("fetch failed");
+    PAYMENT_OPTIONS = await res.json();
+  } catch (e) {
+    PAYMENT_OPTIONS = [];
+  }
+}
+
+function renderPaymentOptionsInfo() {
+  const container = document.getElementById("paymentOptionsInfo");
+  const method = document.getElementById("paymentMethodSelect").value;
+
+  if (method !== "transferencia") {
+    container.hidden = true;
+    return;
+  }
+
+  if (PAYMENT_OPTIONS.length === 0) {
+    container.innerHTML = "<p>No hay datos de transferencia configurados todavía. Elige \"Efectivo\" o escríbenos por WhatsApp.</p>";
+    container.hidden = false;
+    return;
+  }
+
+  container.innerHTML = PAYMENT_OPTIONS.map(
+    (opt) => `
+      <div class="payment-option-card">
+        <div class="payment-option-label">${opt.label}</div>
+        <div class="payment-option-account">${opt.phone_or_account}</div>
+        ${opt.qr_image_url ? `<img class="payment-option-qr" src="${opt.qr_image_url}" alt="QR de ${opt.label}">` : ""}
+      </div>
+    `
+  ).join("");
+  container.hidden = false;
+}
+
 const currency = new Intl.NumberFormat("es-CO", {
   style: "currency",
   currency: "COP",
@@ -343,6 +382,7 @@ async function placeOrder() {
         delivery_address: info.address,
         department: info.department,
         city: info.city,
+        payment_method: document.getElementById("paymentMethodSelect").value,
         items,
       }),
     });
@@ -383,6 +423,8 @@ function setupCartControls() {
   document.getElementById("cartToggle").addEventListener("click", openCart);
   document.getElementById("cartClose").addEventListener("click", closeCart);
   document.getElementById("cartOverlay").addEventListener("click", closeCart);
+
+  document.getElementById("paymentMethodSelect").addEventListener("change", renderPaymentOptionsInfo);
 
   document.getElementById("placeOrderBtn").addEventListener("click", async () => {
     const { data } = await supabaseClient.auth.getSession();
@@ -824,7 +866,7 @@ async function init() {
   setupAutoplayUnlock();
   setupScrollReveal();
 
-  await Promise.all([loadProducts(), loadWhatsappNumber(), loadDeliveryOptions()]);
+  await Promise.all([loadProducts(), loadWhatsappNumber(), loadDeliveryOptions(), loadPaymentOptions()]);
   renderAllCategories();
   setupProductCards();
   setupCartControls();

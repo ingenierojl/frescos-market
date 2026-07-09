@@ -93,6 +93,21 @@
         <button type="submit" class="btn-small">Agregar</button>
       </form>
     </div>
+
+    <div class="catalog-options-manager">
+      <h3>Métodos de pago por transferencia</h3>
+      <p class="settings-hint">Se muestran al cliente cuando elige pagar por transferencia al hacer el pedido.</p>
+      <div class="payment-options-list" id="paymentOptionsList"></div>
+      <form class="payment-option-add-form" id="paymentOptionAddForm">
+        <input type="text" id="newPaymentLabel" placeholder="Nombre, ej: Nequi" required>
+        <input type="text" id="newPaymentAccount" placeholder="Número de celular o cuenta" required>
+        <label class="settings-hint">
+          QR (opcional)
+          <input type="file" id="newPaymentQr" accept="image/*">
+        </label>
+        <button type="submit" class="btn-small">Agregar</button>
+      </form>
+    </div>
   </section>
 </main>
 

@@ -92,15 +92,46 @@ function renderPaymentOptionsInfo() {
   }
 
   container.innerHTML = PAYMENT_OPTIONS.map(
-    (opt) => `
+    (opt, i) => `
       <div class="payment-option-card">
         <div class="payment-option-label">${opt.label}</div>
-        <div class="payment-option-account">${opt.phone_or_account}</div>
-        ${opt.qr_image_url ? `<img class="payment-option-qr" src="${opt.qr_image_url}" alt="QR de ${opt.label}">` : ""}
+        <div class="payment-option-copy-row">
+          <span class="payment-option-account" id="paymentAccount${i}">${opt.phone_or_account}</span>
+          <button type="button" class="payment-option-copy-btn" data-copy-target="paymentAccount${i}">Copiar</button>
+        </div>
+        ${
+          opt.qr_image_url
+            ? `
+          <button type="button" class="payment-option-qr-toggle" data-qr-toggle="paymentQr${i}">Ver código QR</button>
+          <img class="payment-option-qr" id="paymentQr${i}" src="${opt.qr_image_url}" alt="QR de ${opt.label}" hidden>
+        `
+            : ""
+        }
       </div>
     `
   ).join("");
   container.hidden = false;
+
+  container.querySelectorAll(".payment-option-copy-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const text = document.getElementById(btn.dataset.copyTarget).textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const original = btn.textContent;
+        btn.textContent = "¡Copiado!";
+        setTimeout(() => {
+          btn.textContent = original;
+        }, 1500);
+      });
+    });
+  });
+
+  container.querySelectorAll(".payment-option-qr-toggle").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const img = document.getElementById(btn.dataset.qrToggle);
+      img.hidden = !img.hidden;
+      btn.textContent = img.hidden ? "Ver código QR" : "Ocultar código QR";
+    });
+  });
 }
 
 const currency = new Intl.NumberFormat("es-CO", {

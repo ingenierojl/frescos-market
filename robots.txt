@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /panel-fm93k.html
+Allow: /
+
+Sitemap: https://frescosmarket.com/sitemap.xml

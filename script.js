@@ -42,8 +42,28 @@ async function loadWhatsappNumber() {
     if (!res.ok) throw new Error("fetch failed");
     const data = await res.json();
     if (data.whatsapp_number) WHATSAPP_NUMBER = data.whatsapp_number;
+    updateLocalBusinessSchema(data);
   } catch (e) {
-    // se queda con el valor de respaldo
+    // se queda con el valor de respaldo y el schema.org fijo del HTML
+  }
+}
+
+// Completa el schema.org LocalBusiness (fijo en el HTML) con los datos
+// opcionales que el admin haya configurado en el panel (telefono, direccion,
+// codigo postal). Si un campo esta vacio, simplemente no se agrega -- son
+// opcionales para Google.
+function updateLocalBusinessSchema(settings) {
+  const tag = document.getElementById("localBusinessSchema");
+  if (!tag) return;
+
+  try {
+    const schema = JSON.parse(tag.textContent);
+    if (settings.business_phone) schema.telephone = settings.business_phone;
+    if (settings.street_address) schema.address.streetAddress = settings.street_address;
+    if (settings.postal_code) schema.address.postalCode = settings.postal_code;
+    tag.textContent = JSON.stringify(schema);
+  } catch (e) {
+    // si el JSON fijo del HTML fuera invalido, se deja tal cual
   }
 }
 

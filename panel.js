@@ -347,6 +347,9 @@ async function loadSettings() {
   const data = await res.json();
   document.getElementById("telegramChatId").value = data.telegram_chat_id || "";
   document.getElementById("whatsappNumber").value = data.whatsapp_number || "";
+  document.getElementById("businessPhone").value = data.business_phone || "";
+  document.getElementById("streetAddress").value = data.street_address || "";
+  document.getElementById("postalCode").value = data.postal_code || "";
   loadCatalogOptionsManager();
   loadPaymentOptionsManager();
 }
@@ -356,9 +359,18 @@ function setupSettingsForm() {
     e.preventDefault();
     const telegramChatId = document.getElementById("telegramChatId").value.trim();
     const whatsappNumber = document.getElementById("whatsappNumber").value.trim();
+    const businessPhone = document.getElementById("businessPhone").value.trim();
+    const streetAddress = document.getElementById("streetAddress").value.trim();
+    const postalCode = document.getElementById("postalCode").value.trim();
     const res = await authedFetch("/admin/settings", {
       method: "PUT",
-      body: JSON.stringify({ telegram_chat_id: telegramChatId || null, whatsapp_number: whatsappNumber || null }),
+      body: JSON.stringify({
+        telegram_chat_id: telegramChatId || null,
+        whatsapp_number: whatsappNumber || null,
+        business_phone: businessPhone || null,
+        street_address: streetAddress || null,
+        postal_code: postalCode || null,
+      }),
     });
     if (!res.ok) {
       alert("No se pudo guardar la configuración.");

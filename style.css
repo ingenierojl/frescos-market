@@ -1164,6 +1164,7 @@ a { color: inherit; text-decoration: none; }
   flex-direction: column;
   max-height: 420px;
 }
+.customer-chat-panel[hidden] { display: none; }
 
 .customer-chat-head {
   display: flex;

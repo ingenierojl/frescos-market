@@ -162,6 +162,19 @@
       <input type="hidden" id="productPhotoUrl">
       <img id="productPhotoPreview" class="product-photo-preview" hidden alt="Vista previa">
       <p id="productPhotoStatus" class="settings-hint" hidden></p>
+
+      <div class="extra-photos-section" id="extraPhotosSection" hidden>
+        <label>Fotos adicionales (hasta 3, para el slider)</label>
+        <div class="extra-photos-list" id="extraPhotosList"></div>
+        <div class="photo-source-row" id="extraPhotoAddRow">
+          <button type="button" class="btn-outline" id="extraPhotoCameraBtn">📷 Tomar foto</button>
+          <button type="button" class="btn-outline" id="extraPhotoGalleryBtn">🖼️ Elegir de galería</button>
+        </div>
+        <input type="file" id="extraPhotoCamera" accept="image/*" capture="environment" hidden>
+        <input type="file" id="extraPhotoGallery" accept="image/*" hidden>
+        <p class="settings-hint">Guarda el producto primero para poder agregarle fotos adicionales.</p>
+      </div>
+
       <label>
         Stock (vacío = sin control de stock)
         <input type="number" id="productStock" min="0">

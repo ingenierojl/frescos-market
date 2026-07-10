@@ -610,7 +610,97 @@ function openProductModal(product) {
   document.getElementById("productPhotoStatus").hidden = true;
   selectedProductPhotoFile = null;
 
+  currentEditingProductId = product ? product.id : null;
+  document.getElementById("extraPhotosSection").hidden = !product;
+  if (product) renderExtraPhotos(product.photos || []);
+
   document.getElementById("productModal").classList.add("open");
+}
+
+let currentEditingProductId = null; // producto que se esta editando ahora mismo (null = creando uno nuevo)
+
+function renderExtraPhotos(photos) {
+  const list = document.getElementById("extraPhotosList");
+  list.innerHTML = photos
+    .map(
+      (p, i) => `
+      <div class="extra-photo-item" data-id="${p.id}">
+        <img src="${p.photo_url}" alt="">
+        <div class="extra-photo-actions">
+          <button type="button" class="extra-photo-move" data-dir="up" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button>
+          <button type="button" class="extra-photo-move" data-dir="down" ${i === photos.length - 1 ? "disabled" : ""} aria-label="Bajar">↓</button>
+          <button type="button" class="extra-photo-remove" aria-label="Quitar">✕</button>
+        </div>
+      </div>
+    `
+    )
+    .join("");
+
+  document.getElementById("extraPhotoAddRow").hidden = photos.length >= 3;
+
+  list.querySelectorAll(".extra-photo-move").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const photoId = btn.closest(".extra-photo-item").dataset.id;
+      const res = await authedFetch(
+        `/admin/products/${currentEditingProductId}/photos/${photoId}/move?direction=${btn.dataset.dir}`,
+        { method: "POST" }
+      );
+      if (!res.ok) return;
+      renderExtraPhotos(await res.json());
+    });
+  });
+
+  list.querySelectorAll(".extra-photo-remove").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const photoId = btn.closest(".extra-photo-item").dataset.id;
+      const res = await authedFetch(`/admin/products/${currentEditingProductId}/photos/${photoId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        alert("No se pudo quitar la foto.");
+        return;
+      }
+      loadProducts().then(() => renderExtraPhotos(productsById[currentEditingProductId].photos));
+    });
+  });
+}
+
+async function addExtraPhoto(file) {
+  try {
+    const photoUrl = await uploadProductPhoto(file);
+    const res = await authedFetch(`/admin/products/${currentEditingProductId}/photos`, {
+      method: "POST",
+      body: JSON.stringify({ photo_url: photoUrl }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      alert(body.detail || "No se pudo agregar la foto.");
+      return;
+    }
+    await loadProducts();
+    renderExtraPhotos(productsById[currentEditingProductId].photos);
+  } catch (err) {
+    alert("No se pudo subir la foto. Intenta de nuevo.");
+  }
+}
+
+function setupExtraPhotoAttach() {
+  const cameraBtn = document.getElementById("extraPhotoCameraBtn");
+  const galleryBtn = document.getElementById("extraPhotoGalleryBtn");
+  const cameraInput = document.getElementById("extraPhotoCamera");
+  const galleryInput = document.getElementById("extraPhotoGallery");
+
+  cameraBtn.addEventListener("click", () => cameraInput.click());
+  galleryBtn.addEventListener("click", () => galleryInput.click());
+
+  function onFileSelected(e) {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    addExtraPhoto(file);
+  }
+  cameraInput.addEventListener("change", onFileSelected);
+  galleryInput.addEventListener("change", onFileSelected);
 }
 
 let selectedProductPhotoFile = null; // viene de la camara o de la galeria, cualquiera de los 2 botones
@@ -734,6 +824,7 @@ async function init() {
   await setupAuth();
   setupTabs();
   setupProductForm();
+  setupExtraPhotoAttach();
   setupSettingsForm();
   loadProductFormOptions(); // opciones de Unidad/Categoria para el modal de productos
   await loadProducts(); // llena productsById antes de mostrar pedidos, para ver nombres en vez de #id

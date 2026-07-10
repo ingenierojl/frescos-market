@@ -30,6 +30,7 @@ async function loadProducts() {
       price: p.price,
       photo: p.photo_url,
       category: p.category,
+      photos: [p.photo_url, ...(p.photos || []).map((ph) => ph.photo_url)],
     }));
   } catch (e) {
     PRODUCTS = [];
@@ -230,7 +231,7 @@ function renderGrid(containerId, category) {
     .map(
       (p) => `
     <div class="product-card" data-id="${p.id}">
-      <img class="product-photo" src="${p.photo}" alt="${p.name} fresco">
+      <img class="product-photo" src="${p.photo}" alt="${p.name} fresco" data-action="zoom">
       <div class="product-body">
         <div class="product-name">${p.name}</div>
         <div class="product-unit">${p.unit}</div>
@@ -281,6 +282,73 @@ function setupProductCards() {
       localQty = 1;
       qtyEl.textContent = localQty;
     });
+
+    card.querySelector('[data-action="zoom"]').addEventListener("click", () => openProductLightbox(id));
+  });
+}
+
+/* Lightbox: foto de producto en grande + slider si tiene fotos adicionales */
+let lightboxPhotos = [];
+let lightboxIndex = 0;
+
+function renderLightboxImage() {
+  document.getElementById("lightboxImage").src = lightboxPhotos[lightboxIndex];
+  document.getElementById("lightboxDots").innerHTML = lightboxPhotos
+    .map((_, i) => `<span class="lightbox-dot ${i === lightboxIndex ? "active" : ""}" data-index="${i}"></span>`)
+    .join("");
+  const multi = lightboxPhotos.length > 1;
+  document.getElementById("lightboxPrev").hidden = !multi;
+  document.getElementById("lightboxNext").hidden = !multi;
+  document.getElementById("lightboxDots").hidden = !multi;
+}
+
+function openProductLightbox(productId) {
+  const product = PRODUCTS.find((p) => p.id === productId);
+  if (!product) return;
+  lightboxPhotos = product.photos && product.photos.length ? product.photos : [product.photo];
+  lightboxIndex = 0;
+  renderLightboxImage();
+  document.getElementById("lightboxOverlay").classList.add("open");
+}
+
+function closeLightbox() {
+  document.getElementById("lightboxOverlay").classList.remove("open");
+}
+
+function lightboxShow(delta) {
+  lightboxIndex = (lightboxIndex + delta + lightboxPhotos.length) % lightboxPhotos.length;
+  renderLightboxImage();
+}
+
+function setupLightbox() {
+  document.getElementById("lightboxClose").addEventListener("click", closeLightbox);
+  document.getElementById("lightboxOverlay").addEventListener("click", (e) => {
+    if (e.target.id === "lightboxOverlay") closeLightbox();
+  });
+  document.getElementById("lightboxPrev").addEventListener("click", () => lightboxShow(-1));
+  document.getElementById("lightboxNext").addEventListener("click", () => lightboxShow(1));
+  document.getElementById("lightboxDots").addEventListener("click", (e) => {
+    if (e.target.classList.contains("lightbox-dot")) {
+      lightboxIndex = Number(e.target.dataset.index);
+      renderLightboxImage();
+    }
+  });
+  document.addEventListener("keydown", (e) => {
+    if (!document.getElementById("lightboxOverlay").classList.contains("open")) return;
+    if (e.key === "Escape") closeLightbox();
+    if (e.key === "ArrowLeft") lightboxShow(-1);
+    if (e.key === "ArrowRight") lightboxShow(1);
+  });
+
+  // swipe touch para movil
+  const stage = document.getElementById("lightboxStage");
+  let touchStartX = 0;
+  stage.addEventListener("touchstart", (e) => {
+    touchStartX = e.changedTouches[0].clientX;
+  });
+  stage.addEventListener("touchend", (e) => {
+    const delta = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(delta) > 40) lightboxShow(delta < 0 ? 1 : -1);
   });
 }
 
@@ -977,6 +1045,7 @@ async function init() {
   setupSectionVideos();
   setupAutoplayUnlock();
   setupScrollReveal();
+  setupLightbox();
 
   await Promise.all([loadProducts(), loadWhatsappNumber(), loadDeliveryOptions(), loadPaymentOptions()]);
   renderAllCategories();

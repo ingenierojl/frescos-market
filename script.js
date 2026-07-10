@@ -620,10 +620,54 @@ function renderCustomerMessages(messages) {
     .map((m) => {
       const time = new Date(m.created_at).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
       const role = m.sender_role === "team" ? "team" : "customer";
-      return `<div class="chat-bubble chat-bubble-${role}"><span>${m.body}</span><time>${time}</time></div>`;
+      const imageHtml = m.image_url
+        ? `<img class="chat-message-image" src="${m.image_url}" alt="Imagen enviada">`
+        : "";
+      const bodyHtml = m.body ? `<span>${m.body}</span>` : "";
+      return `<div class="chat-bubble chat-bubble-${role}">${imageHtml}${bodyHtml}<time>${time}</time></div>`;
     })
     .join("");
   container.scrollTop = container.scrollHeight;
+}
+
+let customerChatImageFile = null; // foto/captura elegida para el proximo mensaje, antes de enviar
+
+async function uploadChatImage(file) {
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await supabaseClient.storage.from("chat-images").upload(path, file);
+  if (error) throw error;
+  const { data } = supabaseClient.storage.from("chat-images").getPublicUrl(path);
+  return data.publicUrl;
+}
+
+function setupCustomerChatImageAttach() {
+  const cameraBtn = document.getElementById("customerChatCameraBtn");
+  const galleryBtn = document.getElementById("customerChatGalleryBtn");
+  const cameraInput = document.getElementById("customerChatCamera");
+  const galleryInput = document.getElementById("customerChatGallery");
+  const previewRow = document.getElementById("customerChatImagePreviewRow");
+  const preview = document.getElementById("customerChatImagePreview");
+
+  cameraBtn.addEventListener("click", () => cameraInput.click());
+  galleryBtn.addEventListener("click", () => galleryInput.click());
+
+  function onFileSelected(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    customerChatImageFile = file;
+    preview.src = URL.createObjectURL(file);
+    previewRow.hidden = false;
+  }
+  cameraInput.addEventListener("change", onFileSelected);
+  galleryInput.addEventListener("change", onFileSelected);
+
+  document.getElementById("customerChatImageRemove").addEventListener("click", () => {
+    customerChatImageFile = null;
+    cameraInput.value = "";
+    galleryInput.value = "";
+    previewRow.hidden = true;
+  });
 }
 
 async function loadCustomerMessages() {
@@ -759,16 +803,33 @@ function setupCustomerChat() {
     if (!document.hidden && localStorage.getItem("fm-last-order-id")) loadCustomerMessages();
   });
 
+  setupCustomerChatImageAttach();
+
   document.getElementById("customerChatForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const input = document.getElementById("customerChatInput");
     const body = input.value.trim();
     const orderId = localStorage.getItem("fm-last-order-id");
-    if (!body || !orderId) return;
-    input.value = "";
+    if ((!body && !customerChatImageFile) || !orderId) return;
 
     const { data } = await supabaseClient.auth.getSession();
     const token = data.session ? data.session.access_token : null;
+
+    let imageUrl = null;
+    if (customerChatImageFile) {
+      try {
+        imageUrl = await uploadChatImage(customerChatImageFile);
+      } catch (err) {
+        alert("No se pudo subir la imagen. Intenta de nuevo.");
+        return;
+      }
+    }
+
+    input.value = "";
+    customerChatImageFile = null;
+    document.getElementById("customerChatImagePreviewRow").hidden = true;
+    document.getElementById("customerChatCamera").value = "";
+    document.getElementById("customerChatGallery").value = "";
 
     await fetch(`${API_BASE_URL}/orders/${orderId}/messages`, {
       method: "POST",
@@ -776,7 +837,7 @@ function setupCustomerChat() {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ body }),
+      body: JSON.stringify({ body: body || null, image_url: imageUrl }),
     });
     loadCustomerMessages();
   });

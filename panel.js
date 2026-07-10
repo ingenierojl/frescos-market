@@ -108,8 +108,16 @@ function renderOrders(orders) {
           </div>
           <div class="order-chat" data-id="${order.id}" hidden>
             <div class="order-chat-messages"></div>
+            <div class="chat-image-preview-row" hidden>
+              <img class="chat-image-preview" alt="Vista previa">
+              <button type="button" class="chat-image-remove" aria-label="Quitar imagen">✕</button>
+            </div>
             <form class="order-chat-form">
-              <input type="text" class="order-chat-input" placeholder="Escribe un mensaje..." maxlength="1000" required>
+              <button type="button" class="chat-attach-btn order-chat-camera-btn" aria-label="Tomar foto">📷</button>
+              <button type="button" class="chat-attach-btn order-chat-gallery-btn" aria-label="Elegir de galería">🖼️</button>
+              <input type="file" class="order-chat-camera" accept="image/*" capture="environment" hidden>
+              <input type="file" class="order-chat-gallery" accept="image/*" hidden>
+              <input type="text" class="order-chat-input" placeholder="Escribe un mensaje..." maxlength="1000">
               <button type="submit" class="btn-small">Enviar</button>
             </form>
           </div>
@@ -140,15 +148,63 @@ function renderOrders(orders) {
     });
   });
 
+  list.querySelectorAll(".order-chat").forEach((chatEl) => {
+    const previewRow = chatEl.querySelector(".chat-image-preview-row");
+    const preview = previewRow.querySelector(".chat-image-preview");
+    const cameraInput = chatEl.querySelector(".order-chat-camera");
+    const galleryInput = chatEl.querySelector(".order-chat-gallery");
+
+    chatEl.querySelector(".order-chat-camera-btn").addEventListener("click", () => cameraInput.click());
+    chatEl.querySelector(".order-chat-gallery-btn").addEventListener("click", () => galleryInput.click());
+
+    function onFileSelected(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      chatEl.selectedImageFile = file;
+      preview.src = URL.createObjectURL(file);
+      previewRow.hidden = false;
+    }
+    cameraInput.addEventListener("change", onFileSelected);
+    galleryInput.addEventListener("change", onFileSelected);
+
+    previewRow.querySelector(".chat-image-remove").addEventListener("click", () => {
+      chatEl.selectedImageFile = null;
+      cameraInput.value = "";
+      galleryInput.value = "";
+      previewRow.hidden = true;
+    });
+  });
+
   list.querySelectorAll(".order-chat-form").forEach((form) => {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const orderId = form.closest(".order-chat").dataset.id;
+      const chatEl = form.closest(".order-chat");
+      const orderId = chatEl.dataset.id;
       const input = form.querySelector(".order-chat-input");
       const body = input.value.trim();
-      if (!body) return;
+      const imageFile = chatEl.selectedImageFile;
+      if (!body && !imageFile) return;
+
+      let imageUrl = null;
+      if (imageFile) {
+        try {
+          imageUrl = await uploadChatImage(imageFile);
+        } catch (err) {
+          alert("No se pudo subir la imagen. Intenta de nuevo.");
+          return;
+        }
+      }
+
       input.value = "";
-      await authedFetch(`/orders/${orderId}/messages`, { method: "POST", body: JSON.stringify({ body }) });
+      chatEl.selectedImageFile = null;
+      chatEl.querySelector(".chat-image-preview-row").hidden = true;
+      chatEl.querySelector(".order-chat-camera").value = "";
+      chatEl.querySelector(".order-chat-gallery").value = "";
+
+      await authedFetch(`/orders/${orderId}/messages`, {
+        method: "POST",
+        body: JSON.stringify({ body: body || null, image_url: imageUrl }),
+      });
       loadMessages(orderId);
     });
   });
@@ -179,7 +235,11 @@ function renderMessages(orderId, messages) {
   container.innerHTML = messages
     .map((m) => {
       const time = new Date(m.created_at).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
-      return `<div class="chat-bubble chat-bubble-${m.sender_role}"><span>${m.body}</span><time>${time}</time></div>`;
+      const imageHtml = m.image_url
+        ? `<img class="chat-message-image" src="${m.image_url}" alt="Imagen enviada">`
+        : "";
+      const bodyHtml = m.body ? `<span>${m.body}</span>` : "";
+      return `<div class="chat-bubble chat-bubble-${m.sender_role}">${imageHtml}${bodyHtml}<time>${time}</time></div>`;
     })
     .join("");
   container.scrollTop = container.scrollHeight;
@@ -562,6 +622,15 @@ async function uploadProductPhoto(file) {
   const { error } = await supabaseClient.storage.from("product-photos").upload(path, file);
   if (error) throw error;
   const { data } = supabaseClient.storage.from("product-photos").getPublicUrl(path);
+  return data.publicUrl;
+}
+
+async function uploadChatImage(file) {
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await supabaseClient.storage.from("chat-images").upload(path, file);
+  if (error) throw error;
+  const { data } = supabaseClient.storage.from("chat-images").getPublicUrl(path);
   return data.publicUrl;
 }
 

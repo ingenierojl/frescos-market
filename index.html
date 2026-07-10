@@ -226,8 +226,16 @@
     <button class="login-modal-close" id="customerChatClose" aria-label="Cerrar">✕</button>
   </div>
   <div class="order-chat-messages" id="customerChatMessages"></div>
+  <div class="chat-image-preview-row" id="customerChatImagePreviewRow" hidden>
+    <img class="chat-image-preview" id="customerChatImagePreview" alt="Vista previa">
+    <button type="button" class="chat-image-remove" id="customerChatImageRemove" aria-label="Quitar imagen">✕</button>
+  </div>
   <form class="order-chat-form" id="customerChatForm">
-    <input type="text" class="order-chat-input" id="customerChatInput" placeholder="Escribe un mensaje..." maxlength="1000" required>
+    <button type="button" class="chat-attach-btn" id="customerChatCameraBtn" aria-label="Tomar foto">📷</button>
+    <button type="button" class="chat-attach-btn" id="customerChatGalleryBtn" aria-label="Elegir de galería">🖼️</button>
+    <input type="file" id="customerChatCamera" accept="image/*" capture="environment" hidden>
+    <input type="file" id="customerChatGallery" accept="image/*" hidden>
+    <input type="text" class="order-chat-input" id="customerChatInput" placeholder="Escribe un mensaje..." maxlength="1000">
     <button type="submit" class="btn-small">Enviar</button>
   </form>
 </div>

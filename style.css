@@ -668,6 +668,7 @@ a { color: inherit; text-decoration: none; }
   gap: 10px;
   margin-bottom: 14px;
 }
+.payment-options-info[hidden] { display: none; }
 .payment-options-info p { font-size: 13px; color: var(--muted); margin: 0; }
 
 .payment-option-card {
@@ -1084,6 +1085,7 @@ a { color: inherit; text-decoration: none; }
   margin-bottom: 24px;
   border-bottom: 1px solid oklch(0.18 0.02 256 / 0.1);
 }
+.admin-tabs[hidden] { display: none; }
 
 .admin-tab {
   border: none;
@@ -1265,6 +1267,7 @@ a { color: inherit; text-decoration: none; }
   gap: 8px;
   padding: 8px 16px 0;
 }
+.chat-image-preview-row[hidden] { display: none; }
 .chat-image-preview-row .chat-image-preview {
   width: 48px;
   height: 48px;

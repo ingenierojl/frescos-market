@@ -591,7 +591,7 @@ function setupCartControls() {
 
   const footerWhatsapp = document.getElementById("footerWhatsapp");
   footerWhatsapp.href = `https://wa.me/${WHATSAPP_NUMBER}`;
-  footerWhatsapp.textContent = formatWhatsappDisplay(WHATSAPP_NUMBER);
+  document.getElementById("footerWhatsappText").textContent = formatWhatsappDisplay(WHATSAPP_NUMBER);
 }
 
 /* Hero: crossfade entre los 2 videos cada 9s, como en NIDO */

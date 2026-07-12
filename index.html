@@ -190,9 +190,14 @@
       </select>
     </label>
     <div class="payment-options-info" id="paymentOptionsInfo" hidden></div>
-    <button class="btn-primary-block" id="placeOrderBtn" disabled>
-      Hacer pedido
-    </button>
+    <div class="checkout-buttons">
+      <button class="btn-primary-block" id="placeOrderBtnGoogle" disabled>
+        Pedido con Google
+      </button>
+      <button class="btn-primary-block btn-whatsapp" id="placeOrderBtnWhatsapp" disabled>
+        Pedido por WhatsApp
+      </button>
+    </div>
   </div>
 </aside>
 
@@ -202,6 +207,10 @@
     <h2>Antes de continuar</h2>
     <p>Necesitamos estos datos para entregarte el pedido</p>
     <form id="orderInfoForm" class="order-info-form">
+      <label id="orderInfoNameRow" hidden>
+        Nombre
+        <input type="text" id="orderInfoName">
+      </label>
       <label>
         Teléfono
         <input type="tel" id="orderInfoPhone" required>

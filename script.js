@@ -1,4 +1,5 @@
 let WHATSAPP_NUMBER = "573008079369"; // valor de respaldo si /settings no responde; se reemplaza con loadWhatsappNumber()
+let pendingCheckoutChannel = "google"; // "google" o "whatsapp": cual boton de pago se pulso
 const API_BASE_URL = "https://frescos-market-api.onrender.com/api/v1";
 
 function formatWhatsappDisplay(number) {
@@ -365,7 +366,8 @@ function renderCart() {
   const itemsEl = document.getElementById("cartItems");
   const totalEl = document.getElementById("cartTotal");
   const countEl = document.getElementById("cartCount");
-  const placeOrderBtn = document.getElementById("placeOrderBtn");
+  const placeOrderBtnGoogle = document.getElementById("placeOrderBtnGoogle");
+  const placeOrderBtnWhatsapp = document.getElementById("placeOrderBtnWhatsapp");
 
   const entries = Object.entries(cart).filter(([, qty]) => qty > 0);
   const totalCount = entries.reduce((sum, [, qty]) => sum + qty, 0);
@@ -374,7 +376,8 @@ function renderCart() {
   if (entries.length === 0) {
     itemsEl.innerHTML = '<p class="cart-empty">Tu carrito está vacío. Agrega productos del catálogo.</p>';
     totalEl.textContent = currency.format(0);
-    placeOrderBtn.disabled = true;
+    placeOrderBtnGoogle.disabled = true;
+    placeOrderBtnWhatsapp.disabled = true;
     return;
   }
 
@@ -403,7 +406,8 @@ function renderCart() {
     .join("");
 
   totalEl.textContent = currency.format(total);
-  placeOrderBtn.disabled = false;
+  placeOrderBtnGoogle.disabled = false;
+  placeOrderBtnWhatsapp.disabled = false;
 
   itemsEl.querySelectorAll(".cart-item").forEach((row) => {
     const id = row.dataset.id;
@@ -444,6 +448,17 @@ function saveCustomerInfo(info) {
 async function prefillOrderInfoForm() {
   let info = getCustomerInfo();
 
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const nameRow = document.getElementById("orderInfoNameRow");
+  const nameInput = document.getElementById("orderInfoName");
+  if (sessionData.session) {
+    nameRow.hidden = true;
+    nameInput.required = false;
+  } else {
+    nameRow.hidden = false;
+    nameInput.required = true;
+  }
+
   if (!info) {
     try {
       const { data } = await supabaseClient.auth.getSession();
@@ -469,6 +484,7 @@ async function prefillOrderInfoForm() {
   }
 
   if (info) {
+    document.getElementById("orderInfoName").value = info.name || "";
     document.getElementById("orderInfoPhone").value = info.phone || "";
     document.getElementById("orderInfoAddress").value = info.address || "";
     if (info.department) document.getElementById("orderInfoDepartment").value = info.department;
@@ -485,15 +501,18 @@ function closeOrderInfoModal() {
   document.getElementById("orderInfoModal").classList.remove("open");
 }
 
-async function placeOrder() {
+async function placeOrder(channel) {
   const info = getCustomerInfo();
   const entries = Object.entries(cart).filter(([, qty]) => qty > 0);
 
   const items = entries.map(([id, qty]) => ({ product_slug: id, quantity: qty }));
 
-  const placeOrderBtn = document.getElementById("placeOrderBtn");
-  placeOrderBtn.disabled = true;
-  placeOrderBtn.textContent = "Enviando…";
+  const placeOrderBtnGoogle = document.getElementById("placeOrderBtnGoogle");
+  const placeOrderBtnWhatsapp = document.getElementById("placeOrderBtnWhatsapp");
+  const activeBtn = channel === "whatsapp" ? placeOrderBtnWhatsapp : placeOrderBtnGoogle;
+  placeOrderBtnGoogle.disabled = true;
+  placeOrderBtnWhatsapp.disabled = true;
+  activeBtn.textContent = "Enviando…";
 
   try {
     const { data } = await supabaseClient.auth.getSession();
@@ -506,6 +525,7 @@ async function placeOrder() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({
+        customer_name: info.name || undefined,
         customer_phone: info.phone,
         delivery_address: info.address,
         department: info.department,
@@ -541,16 +561,37 @@ async function placeOrder() {
     showChatWidget();
     startCustomerChatBackground(); // empezar a escuchar ya, sin abrir el widget
 
+    const total = entries.reduce((sum, [pid, qty]) => {
+      const p = PRODUCTS.find((prod) => prod.id === pid);
+      return sum + (p ? p.price * qty : 0);
+    }, 0);
+
     Object.keys(cart).forEach((id) => delete cart[id]);
     saveCart();
     renderCart();
     closeCart();
-    alert("¡Pedido recibido! Te contactaremos para confirmar la entrega. Puedes escribirnos desde el botón de chat.");
+
+    if (channel === "whatsapp") {
+      const lines = entries.map(([pid, qty]) => {
+        const p = PRODUCTS.find((prod) => prod.id === pid);
+        return `- ${p ? p.name : pid} x${qty}`;
+      });
+      const message =
+        `Hola, quiero confirmar mi pedido #${order.id} en Frescos Market:\n` +
+        `${lines.join("\n")}\n` +
+        `Total: ${currency.format(total)}\n` +
+        `Entrega: ${info.address}, ${info.city}`;
+      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
+    } else {
+      alert("¡Pedido recibido! Te contactaremos para confirmar la entrega. Puedes escribirnos desde el botón de chat.");
+    }
   } catch (e) {
     alert("No se pudo enviar el pedido. Verifica tu conexión e intenta de nuevo.");
   } finally {
-    placeOrderBtn.disabled = false;
-    placeOrderBtn.textContent = "Hacer pedido";
+    placeOrderBtnGoogle.disabled = false;
+    placeOrderBtnGoogle.textContent = "Pedido con Google";
+    placeOrderBtnWhatsapp.disabled = false;
+    placeOrderBtnWhatsapp.textContent = "Pedido por WhatsApp";
   }
 }
 
@@ -571,15 +612,25 @@ function setupCartControls() {
 
   document.getElementById("paymentMethodSelect").addEventListener("change", renderPaymentOptionsInfo);
 
-  document.getElementById("placeOrderBtn").addEventListener("click", async () => {
+  document.getElementById("placeOrderBtnGoogle").addEventListener("click", async () => {
     const { data } = await supabaseClient.auth.getSession();
     if (!data.session) {
       alert("Inicia sesión con Google para hacer tu pedido.");
       openLoginModal();
       return;
     }
+    pendingCheckoutChannel = "google";
     if (getCustomerInfo()) {
-      placeOrder();
+      placeOrder(pendingCheckoutChannel);
+    } else {
+      openOrderInfoModal();
+    }
+  });
+
+  document.getElementById("placeOrderBtnWhatsapp").addEventListener("click", () => {
+    pendingCheckoutChannel = "whatsapp";
+    if (getCustomerInfo()) {
+      placeOrder(pendingCheckoutChannel);
     } else {
       openOrderInfoModal();
     }
@@ -593,6 +644,7 @@ function setupCartControls() {
   document.getElementById("orderInfoForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const info = {
+      name: document.getElementById("orderInfoName").value.trim(),
       phone: document.getElementById("orderInfoPhone").value.trim(),
       address: document.getElementById("orderInfoAddress").value.trim(),
       department: document.getElementById("orderInfoDepartment").value,

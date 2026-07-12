@@ -48,6 +48,7 @@ function ensureLoginModal() {
     // origin + pathname: conserva la subcarpeta (/frescos-market/ en GitHub
     // Pages) pero SIN el hash/query actual. Con .href el "#" de la pagina se
     // duplicaba (##access_token=...) y Supabase no podia leer el token.
+    if (typeof gtag === "function") gtag("event", "login", { method: "google" });
     await supabaseClient.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: window.location.origin + window.location.pathname },

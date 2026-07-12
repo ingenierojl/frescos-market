@@ -272,6 +272,15 @@ function setupProductCards() {
       renderCart();
       openCart();
 
+      if (typeof gtag === "function") {
+        const p = PRODUCTS.find((prod) => prod.id === id);
+        gtag("event", "add_to_cart", {
+          currency: "COP",
+          value: p ? p.price * localQty : 0,
+          items: [{ item_id: id, item_name: p ? p.name : id, quantity: localQty, price: p ? p.price : 0 }],
+        });
+      }
+
       addBtn.textContent = "Agregado ✓";
       addBtn.classList.add("added");
       setTimeout(() => {
@@ -509,6 +518,23 @@ async function placeOrder() {
     if (!res.ok) throw new Error("order creation failed");
 
     const order = await res.json();
+
+    if (typeof gtag === "function") {
+      const total = entries.reduce((sum, [pid, qty]) => {
+        const p = PRODUCTS.find((prod) => prod.id === pid);
+        return sum + (p ? p.price * qty : 0);
+      }, 0);
+      gtag("event", "purchase", {
+        transaction_id: String(order.id),
+        currency: "COP",
+        value: total,
+        items: entries.map(([pid, qty]) => {
+          const p = PRODUCTS.find((prod) => prod.id === pid);
+          return { item_id: pid, item_name: p ? p.name : pid, quantity: qty, price: p ? p.price : 0 };
+        }),
+      });
+    }
+
     localStorage.setItem("fm-last-order-id", order.id);
     customerChatPrimed = false; // nuevo pedido: reiniciar la linea base del chat
     lastSeenMessageCount = 0;

@@ -445,6 +445,13 @@ function saveCustomerInfo(info) {
   localStorage.setItem("fm-customer-info", JSON.stringify(info));
 }
 
+function hasCompleteCustomerInfo(channel) {
+  const info = getCustomerInfo();
+  if (!info) return false;
+  if (channel === "whatsapp" && !info.name) return false; // invitado necesita nombre
+  return true;
+}
+
 async function prefillOrderInfoForm() {
   let info = getCustomerInfo();
 
@@ -620,7 +627,7 @@ function setupCartControls() {
       return;
     }
     pendingCheckoutChannel = "google";
-    if (getCustomerInfo()) {
+    if (hasCompleteCustomerInfo(pendingCheckoutChannel)) {
       placeOrder(pendingCheckoutChannel);
     } else {
       openOrderInfoModal();
@@ -629,7 +636,7 @@ function setupCartControls() {
 
   document.getElementById("placeOrderBtnWhatsapp").addEventListener("click", () => {
     pendingCheckoutChannel = "whatsapp";
-    if (getCustomerInfo()) {
+    if (hasCompleteCustomerInfo(pendingCheckoutChannel)) {
       placeOrder(pendingCheckoutChannel);
     } else {
       openOrderInfoModal();

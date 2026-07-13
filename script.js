@@ -538,6 +538,7 @@ async function placeOrder(channel) {
         department: info.department,
         city: info.city,
         payment_method: document.getElementById("paymentMethodSelect").value,
+        channel,
         items,
       }),
     });

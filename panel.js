@@ -84,7 +84,7 @@ function renderOrders(orders) {
         <div class="order-card" data-id="${order.id}">
           <div class="order-card-head">
             <div>
-              <div class="order-customer">${order.customer_name}</div>
+              <div class="order-customer">${order.customer_name} <span class="order-channel-badge order-channel-${order.channel}">${order.channel === "whatsapp" ? "WhatsApp" : "Google"}</span></div>
               <div class="order-date">${date} · ${order.customer_phone}</div>
             </div>
             <div class="order-total">${currency.format(order.total)}</div>

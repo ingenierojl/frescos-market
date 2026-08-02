@@ -618,6 +618,17 @@ function setupCartControls() {
   document.getElementById("cartClose").addEventListener("click", closeCart);
   document.getElementById("cartOverlay").addEventListener("click", closeCart);
 
+  // swipe de izquierda a derecha para cerrar el carrito (el drawer entra desde la derecha)
+  const cartDrawer = document.getElementById("cartDrawer");
+  let cartTouchStartX = 0;
+  cartDrawer.addEventListener("touchstart", (e) => {
+    cartTouchStartX = e.changedTouches[0].clientX;
+  });
+  cartDrawer.addEventListener("touchend", (e) => {
+    const delta = e.changedTouches[0].clientX - cartTouchStartX;
+    if (delta > 60) closeCart();
+  });
+
   document.getElementById("paymentMethodSelect").addEventListener("change", renderPaymentOptionsInfo);
 
   document.getElementById("placeOrderBtnGoogle").addEventListener("click", async () => {

@@ -805,7 +805,8 @@ a { color: inherit; text-decoration: none; }
 }
 .order-info-form label[hidden] { display: none; }
 
-.order-info-form input {
+.order-info-form input,
+.order-info-form select {
   font-family: inherit;
   font-size: 15px;
   font-weight: 500;
@@ -814,8 +815,11 @@ a { color: inherit; text-decoration: none; }
   border-radius: 8px;
   border: 1px solid oklch(0.18 0.02 256 / 0.18);
   background: var(--bg);
+  height: 42px;
+  width: 100%;
 }
-.order-info-form input:focus { outline: none; border-color: var(--primary); }
+.order-info-form input:focus,
+.order-info-form select:focus { outline: none; border-color: var(--primary); }
 
 .order-info-form .btn-primary-block { margin-top: 6px; }
 

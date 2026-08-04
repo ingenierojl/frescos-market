@@ -683,7 +683,7 @@ function setupCartControls() {
       }).catch(() => {});
     }
 
-    placeOrder();
+    placeOrder(pendingCheckoutChannel);
   });
 
   const footerWhatsapp = document.getElementById("footerWhatsapp");

@@ -281,6 +281,7 @@ a { color: inherit; text-decoration: none; }
 @media (prefers-reduced-motion: reduce) {
   .hero-video { transition: none; }
   .btn-primary:hover, .cart-btn:hover { transform: none; }
+  .brand-mark-leaf animateTransform { display: none; }
 }
 
 /* Section intro bands (video + scrim) */

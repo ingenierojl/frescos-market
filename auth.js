@@ -65,9 +65,6 @@ function ensureLoginModal() {
         <button class="login-provider-btn" data-provider="google">
           ${ICONS.google}<span>Continuar con Google</span>
         </button>
-        <button class="login-provider-btn" data-provider="facebook" disabled>
-          ${ICONS.facebook}<span>Continuar con Facebook</span><span class="provider-soon">Próximamente</span>
-        </button>
       </div>
     </div>
   `;

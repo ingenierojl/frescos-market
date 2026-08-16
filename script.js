@@ -31,6 +31,7 @@ async function loadProducts() {
       price: p.price,
       photo: p.photo_url,
       category: p.category,
+      stock: p.stock, // null = sin control de stock
       photos: [p.photo_url, ...(p.photos || []).map((ph) => ph.photo_url)],
     }));
   } catch (e) {
@@ -162,6 +163,15 @@ const currency = new Intl.NumberFormat("es-CO", {
   maximumFractionDigits: 0,
 });
 
+// Entero >= 1, limitado al stock del producto si lo controla (stock null = sin limite).
+// Usado tanto por el stepper +/- como por el campo de cantidad editable a mano.
+function clampQty(value, stock) {
+  let n = parseInt(value, 10);
+  if (isNaN(n) || n < 1) n = 1;
+  if (stock !== null && stock !== undefined && n > stock) n = stock;
+  return n;
+}
+
 // Estas 2 ya tienen su seccion curada en el HTML (video + texto propios). Cualquier
 // categoria nueva que se agregue desde el panel se muestra en una seccion generica.
 const CURATED_CATEGORY_SECTIONS = ["hortalizas", "frutas"];
@@ -239,7 +249,16 @@ function renderGrid(containerId, category) {
         <div class="product-price">${currency.format(p.price)}</div>
         <div class="qty-row">
           <button class="qty-btn" data-action="minus" aria-label="Restar">−</button>
-          <span class="qty-value" data-role="qty">1</span>
+          <input
+            class="qty-value"
+            type="number"
+            data-role="qty"
+            value="1"
+            min="1"
+            ${p.stock !== null && p.stock !== undefined ? `max="${p.stock}"` : ""}
+            inputmode="numeric"
+            step="1"
+          >
           <button class="qty-btn" data-action="plus" aria-label="Sumar">+</button>
         </div>
         <button class="add-btn" data-action="add">Agregar</button>
@@ -253,32 +272,36 @@ function renderGrid(containerId, category) {
 function setupProductCards() {
   document.querySelectorAll(".product-card").forEach((card) => {
     const id = card.dataset.id;
+    const product = PRODUCTS.find((p) => p.id === id);
     const qtyEl = card.querySelector('[data-role="qty"]');
     const addBtn = card.querySelector('[data-action="add"]');
-    let localQty = 1;
 
     card.querySelector('[data-action="minus"]').addEventListener("click", () => {
-      localQty = Math.max(1, localQty - 1);
-      qtyEl.textContent = localQty;
+      qtyEl.value = clampQty(Number(qtyEl.value || 1) - 1, product && product.stock);
     });
 
     card.querySelector('[data-action="plus"]').addEventListener("click", () => {
-      localQty += 1;
-      qtyEl.textContent = localQty;
+      qtyEl.value = clampQty(Number(qtyEl.value || 1) + 1, product && product.stock);
+    });
+
+    // change (no input): se valida al salir del campo, no en cada tecla, para
+    // no pelear con el cursor mientras el usuario todavia esta escribiendo.
+    qtyEl.addEventListener("change", () => {
+      qtyEl.value = clampQty(qtyEl.value, product && product.stock);
     });
 
     addBtn.addEventListener("click", () => {
+      const localQty = clampQty(qtyEl.value, product && product.stock);
       cart[id] = (cart[id] || 0) + localQty;
       saveCart();
       renderCart();
       openCart();
 
       if (typeof gtag === "function") {
-        const p = PRODUCTS.find((prod) => prod.id === id);
         gtag("event", "add_to_cart", {
           currency: "COP",
-          value: p ? p.price * localQty : 0,
-          items: [{ item_id: id, item_name: p ? p.name : id, quantity: localQty, price: p ? p.price : 0 }],
+          value: product ? product.price * localQty : 0,
+          items: [{ item_id: id, item_name: product ? product.name : id, quantity: localQty, price: product ? product.price : 0 }],
         });
       }
 
@@ -289,8 +312,7 @@ function setupProductCards() {
         addBtn.classList.remove("added");
       }, 1200);
 
-      localQty = 1;
-      qtyEl.textContent = localQty;
+      qtyEl.value = 1;
     });
 
     card.querySelector('[data-action="zoom"]').addEventListener("click", () => openProductLightbox(id));
@@ -395,7 +417,16 @@ function renderCart() {
           <div class="cart-item-sub">${currency.format(p.price)} ${p.unit}</div>
           <div class="cart-item-qty">
             <button class="qty-btn" data-cart-action="minus">−</button>
-            <span class="qty-value">${qty}</span>
+            <input
+              class="qty-value"
+              type="number"
+              data-cart-action="input"
+              value="${qty}"
+              min="1"
+              ${p.stock !== null && p.stock !== undefined ? `max="${p.stock}"` : ""}
+              inputmode="numeric"
+              step="1"
+            >
             <button class="qty-btn" data-cart-action="plus">+</button>
             <button class="cart-item-remove" data-cart-action="remove" aria-label="Eliminar">🗑</button>
           </div>
@@ -411,6 +442,8 @@ function renderCart() {
 
   itemsEl.querySelectorAll(".cart-item").forEach((row) => {
     const id = row.dataset.id;
+    const product = PRODUCTS.find((prod) => prod.id === id);
+
     row.querySelector('[data-cart-action="minus"]').addEventListener("click", () => {
       cart[id] = Math.max(0, (cart[id] || 0) - 1);
       if (cart[id] === 0) delete cart[id];
@@ -418,7 +451,14 @@ function renderCart() {
       renderCart();
     });
     row.querySelector('[data-cart-action="plus"]').addEventListener("click", () => {
-      cart[id] = (cart[id] || 0) + 1;
+      cart[id] = clampQty((cart[id] || 0) + 1, product && product.stock);
+      saveCart();
+      renderCart();
+    });
+    // change (no input): se re-renderiza al salir del campo, no en cada
+    // tecla, para no perder el foco/cursor mientras el usuario escribe.
+    row.querySelector('[data-cart-action="input"]').addEventListener("change", (e) => {
+      cart[id] = clampQty(e.target.value, product && product.stock);
       saveCart();
       renderCart();
     });
@@ -499,17 +539,47 @@ async function prefillOrderInfoForm() {
   }
 }
 
+// true = el formulario se abrio desde "Usar otra direccion para este pedido"
+// (modal de confirmacion), no desde el flujo normal de primer pedido.
+let orderInfoIsAlternate = false;
+
 function openOrderInfoModal() {
   prefillOrderInfoForm();
+
+  const saveRow = document.getElementById("orderInfoSaveAsProfileRow");
+  const saveCheckbox = document.getElementById("orderInfoSaveAsProfile");
+  if (saveRow && saveCheckbox) {
+    // Primer pedido (o "si, enviar aqui" nunca llega hasta aca): se guarda
+    // siempre, igual que antes, sin mostrar la casilla. Solo aparece cuando
+    // se entra desde "otra direccion", y ahi arranca desmarcada.
+    saveRow.hidden = !orderInfoIsAlternate;
+    saveCheckbox.checked = !orderInfoIsAlternate;
+  }
+
   document.getElementById("orderInfoModal").classList.add("open");
 }
 
 function closeOrderInfoModal() {
   document.getElementById("orderInfoModal").classList.remove("open");
+  orderInfoIsAlternate = false;
 }
 
-async function placeOrder(channel) {
+function openConfirmAddressModal() {
   const info = getCustomerInfo();
+  document.getElementById("confirmAddressSummary").textContent = `${info.address}, ${info.city}`;
+  document.getElementById("confirmAddressModal").classList.add("open");
+}
+
+function closeConfirmAddressModal() {
+  document.getElementById("confirmAddressModal").classList.remove("open");
+}
+
+// options.info: si viene, se usa en vez de releer localStorage -- necesario
+// para el flujo de "otra direccion para este pedido", donde esos datos a
+// proposito NO se guardan en localStorage (ver orderInfoForm submit).
+async function placeOrder(channel, options = {}) {
+  const saveAsProfile = options.saveAsProfile !== false;
+  const info = options.info || getCustomerInfo();
   const entries = Object.entries(cart).filter(([, qty]) => qty > 0);
 
   const items = entries.map(([id, qty]) => ({ product_slug: id, quantity: qty }));
@@ -539,6 +609,7 @@ async function placeOrder(channel) {
         city: info.city,
         payment_method: document.getElementById("paymentMethodSelect").value,
         channel,
+        save_as_profile: saveAsProfile,
         items,
       }),
     });
@@ -640,7 +711,7 @@ function setupCartControls() {
     }
     pendingCheckoutChannel = "google";
     if (hasCompleteCustomerInfo(pendingCheckoutChannel)) {
-      placeOrder(pendingCheckoutChannel);
+      openConfirmAddressModal();
     } else {
       openOrderInfoModal();
     }
@@ -649,7 +720,7 @@ function setupCartControls() {
   document.getElementById("placeOrderBtnWhatsapp").addEventListener("click", () => {
     pendingCheckoutChannel = "whatsapp";
     if (hasCompleteCustomerInfo(pendingCheckoutChannel)) {
-      placeOrder(pendingCheckoutChannel);
+      openConfirmAddressModal();
     } else {
       openOrderInfoModal();
     }
@@ -658,6 +729,20 @@ function setupCartControls() {
   document.getElementById("orderInfoClose").addEventListener("click", closeOrderInfoModal);
   document.getElementById("orderInfoModal").addEventListener("click", (e) => {
     if (e.target.id === "orderInfoModal") closeOrderInfoModal();
+  });
+
+  document.getElementById("confirmAddressClose").addEventListener("click", closeConfirmAddressModal);
+  document.getElementById("confirmAddressModal").addEventListener("click", (e) => {
+    if (e.target.id === "confirmAddressModal") closeConfirmAddressModal();
+  });
+  document.getElementById("confirmAddressSameBtn").addEventListener("click", () => {
+    closeConfirmAddressModal();
+    placeOrder(pendingCheckoutChannel, { saveAsProfile: true });
+  });
+  document.getElementById("confirmAddressChangeBtn").addEventListener("click", () => {
+    closeConfirmAddressModal();
+    orderInfoIsAlternate = true;
+    openOrderInfoModal();
   });
 
   document.getElementById("orderInfoForm").addEventListener("submit", async (e) => {
@@ -669,21 +754,32 @@ function setupCartControls() {
       department: document.getElementById("orderInfoDepartment").value,
       city: document.getElementById("orderInfoCity").value,
     };
-    saveCustomerInfo(info);
+
+    const saveRow = document.getElementById("orderInfoSaveAsProfileRow");
+    const saveCheckbox = document.getElementById("orderInfoSaveAsProfile");
+    // Sin la casilla visible (flujo normal de primer pedido) siempre se
+    // guarda, igual que antes. Con la casilla visible (direccion alterna),
+    // manda lo que el usuario haya marcado -- desmarcada por defecto.
+    const saveAsProfile = saveRow && !saveRow.hidden ? saveCheckbox.checked : true;
+
     closeOrderInfoModal();
 
-    // guarda tambien en el perfil de la base de datos, no solo en este navegador
-    const { data } = await supabaseClient.auth.getSession();
-    const token = data.session ? data.session.access_token : null;
-    if (token) {
-      fetch(`${API_BASE_URL}/users/me/profile`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(info),
-      }).catch(() => {});
+    if (saveAsProfile) {
+      saveCustomerInfo(info);
+
+      // guarda tambien en el perfil de la base de datos, no solo en este navegador
+      const { data } = await supabaseClient.auth.getSession();
+      const token = data.session ? data.session.access_token : null;
+      if (token) {
+        fetch(`${API_BASE_URL}/users/me/profile`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify(info),
+        }).catch(() => {});
+      }
     }
 
-    placeOrder(pendingCheckoutChannel);
+    placeOrder(pendingCheckoutChannel, { saveAsProfile, info });
   });
 
   const footerWhatsapp = document.getElementById("footerWhatsapp");

@@ -204,6 +204,19 @@
   </div>
 </aside>
 
+<div class="login-modal-overlay" id="confirmAddressModal">
+  <div class="login-modal">
+    <button class="login-modal-close" id="confirmAddressClose" aria-label="Cerrar">✕</button>
+    <h2>Confirmar dirección de entrega</h2>
+    <p>¿Enviamos tu pedido a esta dirección?</p>
+    <p id="confirmAddressSummary" class="confirm-address-summary"></p>
+    <div class="confirm-address-actions">
+      <button type="button" class="btn-primary-block" id="confirmAddressSameBtn">Sí, enviar aquí</button>
+      <button type="button" class="btn-outline" id="confirmAddressChangeBtn">Usar otra dirección para este pedido</button>
+    </div>
+  </div>
+</div>
+
 <div class="login-modal-overlay" id="orderInfoModal">
   <div class="login-modal">
     <button class="login-modal-close" id="orderInfoClose" aria-label="Cerrar">✕</button>
@@ -229,6 +242,10 @@
       <label>
         Ciudad
         <select id="orderInfoCity" required></select>
+      </label>
+      <label class="order-info-consent-row" id="orderInfoSaveAsProfileRow">
+        <input type="checkbox" id="orderInfoSaveAsProfile">
+        <span>Guardar como mi dirección principal</span>
       </label>
       <label class="order-info-consent-row">
         <input type="checkbox" id="orderInfoConsent" required>

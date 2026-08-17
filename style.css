@@ -1381,6 +1381,22 @@ a { color: inherit; text-decoration: none; }
   margin-top: 8px;
 }
 
+.chat-toggle-btn { position: relative; }
+
+/* Puntito de aviso: mensaje de cliente sin leer en este pedido (mismo
+   patron que .chat-fab.has-unread del lado del cliente) */
+.chat-toggle-btn.has-unread::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+}
+
 .order-chat {
   margin-top: 12px;
   border-top: 1px solid oklch(0.18 0.02 256 / 0.1);

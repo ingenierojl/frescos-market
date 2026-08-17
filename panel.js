@@ -103,7 +103,7 @@ function renderOrders(orders) {
             </select>
           </label>
           <div class="order-actions">
-            <button class="btn-small chat-toggle-btn" data-id="${order.id}">💬 Chat</button>
+            <button class="btn-small chat-toggle-btn${order.has_unread_messages ? " has-unread" : ""}" data-id="${order.id}">💬 Chat</button>
             ${isAdmin ? `<button class="btn-small danger order-delete-btn" data-id="${order.id}">Eliminar</button>` : ""}
           </div>
           <div class="order-chat" data-id="${order.id}" hidden>
@@ -279,6 +279,35 @@ async function subscribeToOrderMessages(orderId) {
     .subscribe((status) => console.log("[chat] realtime status:", status));
 }
 
+// Canal unico, sin filtro de pedido: escucha mensajes de cliente en CUALQUIER
+// pedido, para prender el punto de aviso en la lista sin tener que abrir cada
+// chat uno por uno. Se abre una sola vez al iniciar el panel (a diferencia de
+// subscribeToOrderMessages(), que es por pedido y solo mientras ese chat esta
+// abierto).
+let allOrdersChannel = null;
+
+async function subscribeToAllOrderMessages() {
+  if (allOrdersChannel) supabaseClient.removeChannel(allOrdersChannel);
+
+  const token = await getAccessToken();
+  supabaseClient.realtime.setAuth(token);
+
+  allOrdersChannel = supabaseClient
+    .channel("admin-order-messages")
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "order_messages", filter: "sender_role=eq.customer" },
+      (payload) => {
+        const orderId = payload.new.order_id;
+        // si ese chat esta abierto ahora mismo, loadMessages() ya lo marca
+        // leido en el backend -- prender el punto aca solo parpadearia.
+        if (orderId === openChatOrderId) return;
+        document.querySelector(`.chat-toggle-btn[data-id="${orderId}"]`)?.classList.add("has-unread");
+      }
+    )
+    .subscribe((status) => console.log("[panel] realtime global status:", status));
+}
+
 function toggleChat(orderId) {
   const chatEl = document.querySelector(`.order-chat[data-id="${orderId}"]`);
   if (!chatEl) return;
@@ -295,6 +324,7 @@ function toggleChat(orderId) {
 
   chatEl.hidden = false;
   openChatOrderId = orderId;
+  document.querySelector(`.chat-toggle-btn[data-id="${orderId}"]`)?.classList.remove("has-unread");
   loadMessages(orderId);
   subscribeToOrderMessages(orderId);
   // Respaldo mientras confirmamos que realtime entrega bien: polling cada 5s
@@ -829,6 +859,7 @@ async function init() {
   loadProductFormOptions(); // opciones de Unidad/Categoria para el modal de productos
   await loadProducts(); // llena productsById antes de mostrar pedidos, para ver nombres en vez de #id
   await loadOrders();
+  subscribeToAllOrderMessages();
 
   supabaseClient.auth.onAuthStateChange(async () => {
     await loadProducts(); // primero: define isAdmin antes de pintar los pedidos

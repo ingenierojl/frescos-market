@@ -50,11 +50,15 @@ function setupTabs() {
       document.getElementById("ordersTab").hidden = target !== "orders";
       document.getElementById("productsTab").hidden = target !== "products";
       document.getElementById("settingsTab").hidden = target !== "settings";
+      document.getElementById("teamTab").hidden = target !== "team";
       if (target === "products" && document.getElementById("productsList").dataset.loaded !== "true") {
         loadProducts();
       }
       if (target === "settings") {
         loadSettings();
+      }
+      if (target === "team") {
+        loadTeam();
       }
     });
   });
@@ -422,11 +426,13 @@ async function loadProducts() {
     isAdmin = false;
     document.querySelector('.admin-tab[data-tab="products"]').hidden = true;
     document.getElementById("settingsTabBtn").hidden = true;
+    document.getElementById("teamTabBtn").hidden = true;
     return;
   }
   if (!res.ok) return;
   isAdmin = true; // solo el admin puede listar productos, sirve para mostrar "Eliminar" en pedidos
   document.getElementById("settingsTabBtn").hidden = false;
+  document.getElementById("teamTabBtn").hidden = false;
   const products = await res.json();
   renderProducts(products);
 }
@@ -612,6 +618,87 @@ function setupPaymentOptionAddForm() {
 
     e.target.reset();
     loadPaymentOptionsManager();
+  });
+}
+
+/* Equipo (admin/despachador) -- solo visible para admin, ver toggle de
+   teamTabBtn en loadProducts() */
+const ROLE_LABELS = { admin: "Administrador", dispatcher: "Despachador" };
+
+async function loadTeam() {
+  const res = await authedFetch("/admin/team");
+  if (!res.ok) return;
+  const members = await res.json();
+  renderTeam(members);
+}
+
+function renderTeam(members) {
+  const list = document.getElementById("teamList");
+  list.innerHTML = members
+    .map(
+      (m) => `
+      <div class="team-member-row" data-id="${m.id}">
+        <span class="team-member-email">${m.email}</span>
+        <select class="team-member-role-select" data-id="${m.id}">
+          <option value="admin" ${m.role === "admin" ? "selected" : ""}>${ROLE_LABELS.admin}</option>
+          <option value="dispatcher" ${m.role === "dispatcher" ? "selected" : ""}>${ROLE_LABELS.dispatcher}</option>
+        </select>
+        <button type="button" class="btn-small danger team-member-remove" data-id="${m.id}">Quitar</button>
+      </div>
+    `
+    )
+    .join("");
+
+  list.querySelectorAll(".team-member-role-select").forEach((select) => {
+    const original = select.value;
+    select.addEventListener("change", async () => {
+      const res = await authedFetch(`/admin/team/${select.dataset.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ role: select.value }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        alert(body.detail || "No se pudo cambiar el rol.");
+        select.value = original;
+        return;
+      }
+      loadTeam();
+    });
+  });
+
+  list.querySelectorAll(".team-member-remove").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm("¿Quitar a este correo del equipo? Pierde acceso al panel de inmediato.")) return;
+      const res = await authedFetch(`/admin/team/${btn.dataset.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        alert(body.detail || "No se pudo quitar del equipo.");
+        return;
+      }
+      loadTeam();
+    });
+  });
+}
+
+function setupTeamForm() {
+  document.getElementById("teamAddForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("newTeamEmail").value.trim();
+    const role = document.getElementById("newTeamRole").value;
+    if (!email) return;
+
+    const res = await authedFetch("/admin/team", {
+      method: "POST",
+      body: JSON.stringify({ email, role }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      alert(body.detail || "No se pudo agregar al equipo.");
+      return;
+    }
+
+    e.target.reset();
+    loadTeam();
   });
 }
 
@@ -856,6 +943,7 @@ async function init() {
   setupProductForm();
   setupExtraPhotoAttach();
   setupSettingsForm();
+  setupTeamForm();
   loadProductFormOptions(); // opciones de Unidad/Categoria para el modal de productos
   await loadProducts(); // llena productsById antes de mostrar pedidos, para ver nombres en vez de #id
   await loadOrders();

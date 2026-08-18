@@ -43,6 +43,7 @@
     <button class="admin-tab active" data-tab="orders">Pedidos</button>
     <button class="admin-tab" data-tab="products">Productos</button>
     <button class="admin-tab" data-tab="settings" id="settingsTabBtn" hidden>Configuración</button>
+    <button class="admin-tab" data-tab="team" id="teamTabBtn" hidden>Equipo</button>
   </nav>
 
   <section id="ordersTab" class="admin-tab-panel">
@@ -126,6 +127,22 @@
           QR (opcional)
           <input type="file" id="newPaymentQr" accept="image/*">
         </label>
+        <button type="submit" class="btn-small">Agregar</button>
+      </form>
+    </div>
+  </section>
+
+  <section id="teamTab" class="admin-tab-panel" hidden>
+    <div class="catalog-options-manager">
+      <h3>Administradores y despachadores</h3>
+      <p class="settings-hint">Quién tiene acceso a este panel. Debe quedar al menos 2 administradores en todo momento -- el sistema no deja quitar ni degradar al penúltimo.</p>
+      <div id="teamList" class="team-list"></div>
+      <form id="teamAddForm" class="team-add-form">
+        <input type="email" id="newTeamEmail" placeholder="correo@gmail.com" required>
+        <select id="newTeamRole">
+          <option value="admin">Administrador</option>
+          <option value="dispatcher">Despachador</option>
+        </select>
         <button type="submit" class="btn-small">Agregar</button>
       </form>
     </div>

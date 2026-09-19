@@ -583,6 +583,13 @@ a { color: inherit; text-decoration: none; }
 }
 .site-footer a { font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 
+.footer-legal-links {
+  margin-top: 10px;
+  font-size: 13px;
+  opacity: 0.85;
+}
+.footer-legal-links a { font-weight: 400; }
+
 .footer-whatsapp-link {
   display: inline-flex;
   align-items: center;

@@ -3,10 +3,13 @@ let pendingCheckoutChannel = "google"; // "google" o "whatsapp": cual boton de p
 const API_BASE_URL = "https://frescos-market-api.onrender.com/api/v1";
 
 function formatWhatsappDisplay(number) {
+  // Quita un "+" inicial si ya viene incluido (ej. guardado asi desde el panel)
+  // para no duplicarlo al anteponer el nuestro.
+  const digits = number.replace(/^\+/, "");
   // Formato internacional sin "+": codigo de pais (2 digitos) + 10 digitos locales
-  const match = number.match(/^(\d{2})(\d{3})(\d{3})(\d{4})$/);
+  const match = digits.match(/^(\d{2})(\d{3})(\d{3})(\d{4})$/);
   if (match) return `+${match[1]} ${match[2]} ${match[3]} ${match[4]}`;
-  return `+${number}`;
+  return `+${digits}`;
 }
 // supabaseClient, renderAuthUI y setupAuth vienen de auth.js (compartido con panel-fm93k.html)
 
@@ -44,7 +47,8 @@ async function loadWhatsappNumber() {
     const res = await fetch(`${API_BASE_URL}/settings`);
     if (!res.ok) throw new Error("fetch failed");
     const data = await res.json();
-    if (data.whatsapp_number) WHATSAPP_NUMBER = data.whatsapp_number;
+    // wa.me necesita el numero sin "+", pero desde el panel a veces lo guardan con el.
+    if (data.whatsapp_number) WHATSAPP_NUMBER = data.whatsapp_number.replace(/^\+/, "");
     updateLocalBusinessSchema(data);
   } catch (e) {
     // se queda con el valor de respaldo y el schema.org fijo del HTML

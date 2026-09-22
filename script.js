@@ -947,8 +947,10 @@ async function loadCustomerMessages() {
       cache: "no-store",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    if (res.status === 404) {
-      // el pedido ya no existe (lo eliminaron): dejar de apuntar a el
+    if (res.status === 404 || res.status === 403) {
+      // 404: el pedido ya no existe. 403: la sesion actual ya no tiene acceso
+      // a el (era de otra cuenta, o se cerro sesion). En ambos casos no tiene
+      // sentido seguir insistiendo cada 8s -- se deja de apuntar a el.
       localStorage.removeItem("fm-last-order-id");
       clearInterval(customerChatPollInterval);
       if (customerChatChannel) supabaseClient.removeChannel(customerChatChannel);

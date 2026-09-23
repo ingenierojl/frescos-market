@@ -299,7 +299,10 @@ function setupProductCards() {
       cart[id] = (cart[id] || 0) + localQty;
       saveCart();
       renderCart();
-      openCart();
+      // Ya no se abre el carrito automaticamente (interrumpia en mobile,
+      // donde ocupa toda la pantalla). La confirmacion es el "Agregado (check)"
+      // del boton (abajo) + el numero del carrito, que ya se actualizo arriba.
+      // El usuario abre el carrito cuando el quiera, tocando el icono.
 
       if (typeof gtag === "function") {
         gtag("event", "add_to_cart", {

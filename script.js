@@ -311,6 +311,15 @@ function setupProductCards() {
           items: [{ item_id: id, item_name: product ? product.name : id, quantity: localQty, price: product ? product.price : 0 }],
         });
       }
+      if (typeof fbq === "function") {
+        fbq("track", "AddToCart", {
+          content_ids: [id],
+          content_type: "product",
+          content_name: product ? product.name : id,
+          currency: "COP",
+          value: product ? product.price * localQty : 0,
+        });
+      }
 
       addBtn.textContent = "Agregado ✓";
       addBtn.classList.add("added");
@@ -638,6 +647,19 @@ async function placeOrder(channel, options = {}) {
           const p = PRODUCTS.find((prod) => prod.id === pid);
           return { item_id: pid, item_name: p ? p.name : pid, quantity: qty, price: p ? p.price : 0 };
         }),
+      });
+    }
+
+    if (typeof fbq === "function") {
+      const fbTotal = entries.reduce((sum, [pid, qty]) => {
+        const p = PRODUCTS.find((prod) => prod.id === pid);
+        return sum + (p ? p.price * qty : 0);
+      }, 0);
+      fbq("track", "Purchase", {
+        content_ids: entries.map(([pid]) => pid),
+        content_type: "product",
+        currency: "COP",
+        value: fbTotal,
       });
     }
 
